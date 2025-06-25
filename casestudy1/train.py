@@ -170,3 +170,20 @@ def train_try(model_name='2c3f', w=8, a=8, epochs=500, random_seed=1998):
     #print(f'Model saved to {model_save_path}')
     log(f'Model saved to {model_save_path}')
     return  model
+
+
+def main():
+    #train_try(model_name='2c3f', w=8, a=8, epochs=10, random_seed=1998)
+
+    w_set = [8]
+    a_set = [8]
+    epochs = 500
+
+    for w in w_set:
+        for a in a_set:
+            print(f"Training model with weight bit width {w} and activation bit width {a}")
+            train_try(model_name='2c3f', w=w, a=a, epochs=epochs, random_seed=1998)
+            print(f"Finished training model with weight bit width {w} and activation bit width {a}")
+
+if __name__ == "__main__":
+    main()

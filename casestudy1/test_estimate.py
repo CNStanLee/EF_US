@@ -45,7 +45,8 @@ from train import train_try
 # ----- USER PARAS ------ #
 
 epochs = 10
-model_name = '2c3f_relu'
+# model_name = '2c3f_relu'
+model_name = '2c3f'
 weight = 1
 activation = 2
 model_ready_name = model_name + '_w'+ str(weight) + '_a' + str(activation) + '_'+ str(epochs) + '_ready.onnx'
@@ -127,7 +128,6 @@ cfg_estimates = build.DataflowBuildConfig(
     synth_clk_period_ns = 10.0,
     fpga_part           = pynq_part_map["ZCU104"],
     steps               = build_cfg.estimate_only_dataflow_steps,
-    #folding_config_file = folding_config_file,
     generate_outputs=[
         build_cfg.DataflowOutputType.ESTIMATE_REPORTS,
     ]

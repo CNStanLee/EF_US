@@ -9,7 +9,6 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
-import torch
 import onnx
 from finn.util.test import get_test_model_trained
 from brevitas.export import export_qonnx
@@ -21,19 +20,41 @@ from qonnx.transformation.fold_constants import FoldConstants
 from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
 from finn.util.basic import make_build_dir
 from finn.util.visualization import showInNetron
-import os
+from dataclasses import dataclass
 import copy
 import torch.nn.utils.prune as prune
+from models import get_model
+from collections import namedtuple
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
+
+
+
+# 定义一个简单的命名元组来存储参数信息
+ParameterInfo = namedtuple('ParameterInfo', [
+    'path',        # 完整参数路径 (如 "conv1.weight")
+    'layer_type',  # 层类型 (如 "Conv2d")
+    'param_count', # 参数总数
+    'non_zero',    # 非零参数数量
+    'sparsity'     # 稀疏度百分比
+])
+
 def analyze_model_sparsity(model):
+    """Analyze sparsity of a PyTorch model
+    
+    Args:
+        model: PyTorch model to analyze
+        
+    Returns:
+        List of ParameterInfo namedtuples containing sparsity information
+    """
     param_details = []
     
-
     for name, module in model.named_modules():
-        if not name: 
+        if not name:  # Skip the root module which has empty name
             continue
             
         layer_type = module.__class__.__name__
@@ -42,32 +63,51 @@ def analyze_model_sparsity(model):
             param_count = param.numel()
             non_zero_count = torch.count_nonzero(param).item()
             sparsity = 100 * (1 - non_zero_count / param_count) if param_count > 0 else 0
-            param_details.append((f"{name}.{param_name}", layer_type, param_count, non_zero_count, sparsity))
+            
+            full_path = f"{name}.{param_name}"
+            param_details.append(
+                ParameterInfo(
+                    path=full_path,
+                    layer_type=layer_type,
+                    param_count=param_count,
+                    non_zero=non_zero_count,
+                    sparsity=sparsity
+                )
+            )
     
+    # Print the results in a formatted table
     if param_details:
-        max_path = max(len(str(d[0])) for d in param_details)
-        max_type = max(len(str(d[1])) for d in param_details)
-        max_count = max(len(f"{d[2]:,}") for d in param_details)  # 带千位分隔符
-        max_nonzero = max(len(f"{d[3]:,}") for d in param_details)
+        max_path = max(len(info.path) for info in param_details)
+        max_type = max(len(info.layer_type) for info in param_details)
+        max_count = max(len(f"{info.param_count:,}") for info in param_details) 
+        max_nonzero = max(len(f"{info.non_zero:,}") for info in param_details)
         
+        # Header
         print(f"{'Parameter Path':<{max_path}} | {'Layer Type':<{max_type}} | {'Param Count':>{max_count}} | {'Non-zero':>{max_nonzero}} | {'Sparsity (%)':>10}")
-        print("-" * (max_path + max_type + max_count + max_nonzero + 30))  # 动态分隔线长度
+        print("-" * (max_path + max_type + max_count + max_nonzero + 30))
         
-        for detail in param_details:
-            print(f"{detail[0]:<{max_path}} | {detail[1]:<{max_type}} | {detail[2]:>{max_count},} | {detail[3]:>{max_nonzero},} | {detail[4]:>10.2f}%")
+        # Rows
+        for info in param_details:
+            print(f"{info.path:<{max_path}} | {info.layer_type:<{max_type}} | {info.param_count:>{max_count},} | {info.non_zero:>{max_nonzero},} | {info.sparsity:>10.2f}%")
     
+    # Print summary
     if param_details:
-        total_params = sum(d[2] for d in param_details)
-        total_non_zero = sum(d[3] for d in param_details)
+        total_params = sum(info.param_count for info in param_details)
+        total_non_zero = sum(info.non_zero for info in param_details)
         total_sparsity = 100 * (1 - total_non_zero / total_params) if total_params > 0 else 0
         
         print("-" * (max_path + max_type + max_count + max_nonzero + 30))
         print(f"{'TOTAL':<{max_path}} | {'-':<{max_type}} | {total_params:>{max_count},} | {total_non_zero:>{max_nonzero},} | {total_sparsity:>10.2f}%")
+        
         compression_ratio = total_params / total_non_zero if total_non_zero > 0 else float('inf')
         print(f"\nCompression Ratio (pruning only): {compression_ratio:.2f}x")
         
-        effective_compression = 4 * compression_ratio  # 4 = 32/8
-        print(f"Effective Compression (pruning + quantization): {effective_compression:.2f}x")
+        #effective_compression = 4 * compression_ratio  # 4 = 32/8 (assuming 32-bit to 8-bit quantization)
+        #print(f"Effective Compression (pruning + quantization): {effective_compression:.2f}x")
+
+    return param_details
+
+
 
 
 def apply_l1_pruning_type(model, layer_type, pruning_percentage=0.5):
@@ -84,12 +124,6 @@ def apply_l1_pruning_type(model, layer_type, pruning_percentage=0.5):
 
 
 def apply_l1_pruning_by_param_path(model, param_path, pruning_percentage=0.5, verbose=False):
-    """
-    改进版：确保能正确剪枝所有层类型
-    
-    参数:
-        verbose: 打印剪枝详细信息
-    """
     model_copy = copy.deepcopy(model)
     model_copy.to(device)
     
@@ -116,3 +150,46 @@ def apply_l1_pruning_by_param_path(model, param_path, pruning_percentage=0.5, ve
     prune.remove(target_module, param_name)
     
     return model_copy
+
+def main():
+    # input parameters
+    w = 1
+    a = 2
+    model_name = "2c3f"
+    model_weight = "./model/best_2c3f_w1_a2_10.pth"
+
+    # Analyze model sparsity
+    print("Analyzing model sparsity...")
+    model = get_model(model_name, w, a)
+    model.load_state_dict(torch.load(model_weight))
+    model.to(device)
+
+    sparsity_info = analyze_model_sparsity(model)
+
+    # 访问第一个参数的信息
+    first_param = sparsity_info[0]
+    print(f"Path: {first_param.path}")
+    print(f"Type: {first_param.layer_type}")
+    print(f"Sparsity: {first_param.sparsity}%")
+
+    # 'path',        # 完整参数路径 (如 "conv1.weight")
+    # 'layer_type',  # 层类型 (如 "Conv2d")
+    # 'param_count', # 参数总数
+    # 'non_zero',    # 非零参数数量
+    # 'sparsity'     # 稀疏度百分比
+
+    # 遍历所有参数
+
+    # deep copy the model
+    pmodel = copy.deepcopy(model).to(device)
+
+    for param in sparsity_info:
+        if param.param_count > 150: 
+            pmodel = apply_l1_pruning_by_param_path(pmodel, param.path, pruning_percentage=0.5, verbose=True)
+
+    sparsity_info = analyze_model_sparsity(pmodel)
+
+
+
+if __name__ == "__main__":
+    main()

@@ -15,7 +15,12 @@ import os
 from brevitas.core.scaling import ScalingImplType
 from brevitas.core.quant import QuantType
 import brevitas.nn as qnn
+import ast
+from functools import reduce
+from operator import mul
+from torch.nn import Dropout
 
+DROPOUT = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 print(f"Current working directory: {os.getcwd()}")
@@ -51,6 +56,7 @@ config['QUANT'] = {
     'IN_BIT_WIDTH': '8',
 }
 
+DROPOUT = 0.2
 
 class CNV(Module):
 
@@ -228,6 +234,62 @@ class CNV_RELU(Module):
 
 
 
+
+
+class FC(Module):
+
+    def __init__(
+        self,
+        num_classes,
+        weight_bit_width,
+        act_bit_width,
+        in_bit_width,
+        in_channels,
+        out_features,
+        in_features=(28, 28)):
+        super(FC, self).__init__()
+
+        self.features = ModuleList()
+        self.features.append(QuantIdentity(act_quant=CommonActQuant, bit_width=in_bit_width))
+        self.features.append(Dropout(p=DROPOUT))
+        in_features = reduce(mul, in_features)
+        for out_features in out_features:
+            self.features.append(
+                QuantLinear(
+                    in_features=in_features,
+                    out_features=out_features,
+                    bias=False,
+                    weight_bit_width=weight_bit_width,
+                    weight_quant=CommonWeightQuant))
+            in_features = out_features
+            self.features.append(BatchNorm1d(num_features=in_features))
+            self.features.append(QuantIdentity(act_quant=CommonActQuant, bit_width=act_bit_width))
+            self.features.append(Dropout(p=DROPOUT))
+        self.features.append(
+            QuantLinear(
+                in_features=in_features,
+                out_features=num_classes,
+                bias=False,
+                weight_bit_width=weight_bit_width,
+                weight_quant=CommonWeightQuant))
+        self.features.append(TensorNorm())
+
+        for m in self.modules():
+            if isinstance(m, QuantLinear):
+                torch.nn.init.uniform_(m.weight.data, -1, 1)
+
+    def clip_weights(self, min_val, max_val):
+        for mod in self.features:
+            if isinstance(mod, QuantLinear):
+                mod.weight.data.clamp_(min_val, max_val)
+
+    def forward(self, x):
+        x = x.view(x.shape[0], -1)
+        x = 2.0 * x - torch.tensor([1.0], device=x.device)
+        for mod in self.features:
+            x = mod(x)
+        return x
+    
 def cnv(cfg):
     weight_bit_width = cfg.getint('QUANT', 'WEIGHT_BIT_WIDTH')
     act_bit_width = cfg.getint('QUANT', 'ACT_BIT_WIDTH')
@@ -241,7 +303,23 @@ def cnv(cfg):
         num_classes=num_classes,
         in_ch=in_channels)
     return net
-    
+
+def fc(cfg):
+    weight_bit_width = cfg.getint('QUANT', 'WEIGHT_BIT_WIDTH')
+    act_bit_width = cfg.getint('QUANT', 'ACT_BIT_WIDTH')
+    in_bit_width = cfg.getint('QUANT', 'IN_BIT_WIDTH')
+    num_classes = cfg.getint('MODEL', 'NUM_CLASSES')
+    in_channels = cfg.getint('MODEL', 'IN_CHANNELS')
+    out_features = ast.literal_eval(cfg.get('MODEL', 'OUT_FEATURES'))
+    net = FC(
+        weight_bit_width=weight_bit_width,
+        act_bit_width=act_bit_width,
+        in_bit_width=in_bit_width,
+        in_channels=in_channels,
+        out_features=out_features,
+        num_classes=num_classes)
+    return net
+
 
 def get_model(model_name, w, a):
     if model_name == '2c3f':
@@ -260,5 +338,29 @@ def get_model(model_name, w, a):
         num_classes=10,
         in_ch=1)
         return net
+    elif model_name == 'tfc':
+        net = FC(
+        weight_bit_width=w,
+        act_bit_width=a,
+        in_bit_width=1,
+        in_channels=1,
+        out_features=[64, 64, 64],
+        num_classes=10)
+    elif model_name == 'sfc':
+        net = FC(
+        weight_bit_width=w,
+        act_bit_width=a,
+        in_bit_width=1,
+        in_channels=1,
+        out_features=[256, 256, 256],
+        num_classes=10)
+    elif model_name == 'lfc':
+        net = FC(
+        weight_bit_width=w,
+        act_bit_width=a,
+        in_bit_width=1,
+        in_channels=1,
+        out_features=[1024, 1024, 1024],
+        num_classes=10)
     else:
         raise ValueError(f"Model {model_name} is not supported.")

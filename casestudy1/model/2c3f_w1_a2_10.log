@@ -1,0 +1,13 @@
+Training 2c3f with weight bit width 1 and activation bit width 2 for 10 epochs.
+Epoch [1/10], LR: 0.010000, Train Loss: 1.1348, Train Acc: 62.96%, Val Loss: 1.0247, Val Acc: 65.01%
+Epoch [2/10], LR: 0.010000, Train Loss: 0.5613, Train Acc: 81.56%, Val Loss: 2.2216, Val Acc: 47.28%
+Epoch [3/10], LR: 0.010000, Train Loss: 0.4224, Train Acc: 86.27%, Val Loss: 1.8659, Val Acc: 49.07%
+Epoch [4/10], LR: 0.010000, Train Loss: 0.3633, Train Acc: 88.28%, Val Loss: 0.3898, Val Acc: 87.32%
+Epoch [5/10], LR: 0.010000, Train Loss: 0.3168, Train Acc: 89.77%, Val Loss: 0.4853, Val Acc: 84.22%
+Epoch [6/10], LR: 0.010000, Train Loss: 0.3032, Train Acc: 90.36%, Val Loss: 0.3345, Val Acc: 89.08%
+Epoch [7/10], LR: 0.010000, Train Loss: 0.2836, Train Acc: 91.00%, Val Loss: 0.2961, Val Acc: 90.93%
+Epoch [8/10], LR: 0.010000, Train Loss: 0.2669, Train Acc: 91.57%, Val Loss: 0.3315, Val Acc: 89.53%
+Epoch [9/10], LR: 0.010000, Train Loss: 0.2550, Train Acc: 91.79%, Val Loss: 0.3137, Val Acc: 90.00%
+Epoch [10/10], LR: 0.010000, Train Loss: 0.2455, Train Acc: 92.32%, Val Loss: 0.2456, Val Acc: 92.21%
+Test Accuracy of the best model on the test images: 92.63%
+Model saved to ./model/2c3f_w1_a2_10.pth
