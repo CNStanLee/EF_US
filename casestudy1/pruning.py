@@ -23,9 +23,46 @@ from finn.util.visualization import showInNetron
 from dataclasses import dataclass
 import copy
 import torch.nn.utils.prune as prune
+
+from collections import namedtuple, defaultdict
+
+
+from dataset import get_dataloaders
 from models import get_model
+from train import train, test, validate
+
+import json
+import csv
 from collections import namedtuple
 
+# 保存结果到CSV
+def save_to_csv(results, filename):
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        # 写入表头
+        writer.writerow(results[0]._fields)
+        # 写入数据
+        for res in results:
+            writer.writerow([res.layer_path, res.pruning_percentage, 
+                            res.test_accuracy, res.accuray_drop])
+
+# 从CSV读取结果
+def load_from_csv(filename):
+    PruningResult = namedtuple('PruningResult', ['layer_path', 'pruning_percentage', 'test_accuracy', 'accuray_drop'])
+    results = []
+    with open(filename, 'r') as f:
+        reader = csv.reader(f)
+        next(reader)  # 跳过表头
+        for row in reader:
+            # 转换数据类型
+            layer_path = row[0]
+            pruning_percentage = float(row[1])
+            test_accuracy = float(row[2])
+            accuray_drop = float(row[3])
+            results.append(PruningResult(
+                layer_path, pruning_percentage, test_accuracy, accuray_drop
+            ))
+    return results
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -151,6 +188,184 @@ def apply_l1_pruning_by_param_path(model, param_path, pruning_percentage=0.5, ve
     
     return model_copy
 
+def layer_pruning(model, param_path, pruning_percentage=0.5, pruning_type='l1'):
+    model_copy = copy.deepcopy(model)
+    model_copy.to(device)
+    
+    parts = param_path.split('.')
+    param_name = parts[-1]
+    module_path = '.'.join(parts[:-1])
+    
+    target_module = model_copy
+    if module_path:  
+        for part in module_path.split('.'):
+            try:
+                target_module = getattr(target_module, part)
+            except AttributeError:
+                raise ValueError(f"Module path '{module_path}' not found (failed at '{part}')")
+    
+    if not hasattr(target_module, param_name):
+        raise ValueError(f"Parameter '{param_name}' not found in module '{module_path}'")
+    
+    if pruning_type == 'l1':
+        prune.l1_unstructured(target_module, name=param_name, amount=pruning_percentage)
+        prune.remove(target_module, param_name)
+    elif pruning_type == 'l2':
+        prune.l2_unstructured(target_module, name=param_name, amount=pruning_percentage)
+        prune.remove(target_module, param_name)
+    elif pruning_type == 'random':
+        prune.random_unstructured(target_module, name=param_name, amount=pruning_percentage)
+        prune.remove(target_module, param_name)
+    elif pruning_type == 'magnitude':
+        prune.magnitude_unstructured(target_module, name=param_name, amount=pruning_percentage)
+        prune.remove(target_module, param_name)
+    elif pruning_type == 'SNIP':
+        # SNIP pruning is not directly supported in PyTorch's prune module.
+        # You would need to implement SNIP pruning logic separately.
+        raise NotImplementedError("SNIP pruning is not implemented in this function.")
+    else:
+        raise ValueError(f"Unsupported pruning type: {pruning_type}")
+    
+    return model_copy
+
+
+
+def sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', step = 20):
+    # 定义命名元组类型
+    PruningResult = namedtuple('PruningResult', ['layer_path', 'pruning_percentage', 'test_accuracy', 'accuray_drop'])
+    
+    original_acc = test(model, test_loader, device)
+    results = []
+    for param in sparsity_info:
+        layer_path = param.path
+        for percentage in range(0, 100, step):
+            percentage /= 100.0
+            # Apply pruning
+            pruned_model = layer_pruning(model, layer_path, pruning_percentage=percentage, pruning_type=pruning_type)
+            test_acc = test(pruned_model, test_loader, device)
+            
+            # 创建命名元组并添加到结果列表
+            result = PruningResult(
+                layer_path=layer_path,
+                pruning_percentage=percentage,
+                test_accuracy=test_acc,
+                accuray_drop= original_acc - test_acc
+            )
+            results.append(result)
+            
+            print(f"Layer {layer_path} Pruning {percentage*100:.0f}% - Test Accuracy: {test_acc:.2f}%, Accuracy Drop: {result.accuray_drop:.2f}%")
+    return results
+
+
+from collections import namedtuple
+
+def determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance=0.05):
+    """
+    根据敏感度分析结果确定每层的安全剪枝率
+    
+    参数:
+    sensitivity_results -- sensitivity_analysis()函数的返回结果列表
+    accuracy_drop_tolerance -- 可接受的精度下降阈值 (默认0.05)
+    
+    返回:
+    PruningDecision命名元组列表，包含每层路径和安全剪枝率
+    """
+    # 定义结果命名元组
+    PruningDecision = namedtuple('PruningDecision', ['layer_path', 'pruning_rate'])
+    
+    # 按层路径分组结果
+    layer_results = {}
+    for result in sensitivity_results:
+        layer_path = result.layer_path
+        if layer_path not in layer_results:
+            layer_results[layer_path] = []
+        layer_results[layer_path].append(result)
+    
+    decisions = []
+    # 处理每层数据
+    for layer_path, results in layer_results.items():
+        # 按剪枝率降序排序 (从高剪枝率到低剪枝率)
+        sorted_results = sorted(results, key=lambda x: x.pruning_percentage, reverse=True)
+        
+        safe_rate = 0.0  # 默认安全剪枝率为0
+        # 从高剪枝率向低剪枝率搜索
+        for result in sorted_results:
+            if result.accuray_drop <= accuracy_drop_tolerance:
+                safe_rate = result.pruning_percentage
+                break  # 找到第一个满足条件的即停止
+        
+        decisions.append(PruningDecision(layer_path, safe_rate))
+    
+    return decisions
+
+
+def prune_model_by_decisions(original_model, pruning_decisions, pruning_type='l1'):
+    """
+    根据剪枝决策列表对模型进行逐层剪枝
+    
+    参数:
+        original_model: 原始模型
+        pruning_decisions: 剪枝决策列表，每个元素是PruningDecision（包含layer_path和pruning_rate）
+        pruning_type: 剪枝类型，默认为'l1'
+    
+    返回:
+        剪枝后的模型
+    """
+    # 创建一个模型副本用于剪枝
+    pruned_model = copy.deepcopy(original_model)
+    pruned_model.to(device)
+    
+    # 对每一层应用剪枝
+    for decision in pruning_decisions:
+        # 应用剪枝
+        pruned_model = layer_pruning(
+            model=pruned_model,
+            param_path=decision.layer_path,
+            pruning_percentage=decision.pruning_rate,
+            pruning_type=pruning_type
+        )
+    
+    return pruned_model
+
+def freeze_zero_weights(model):
+    for name, param in model.named_parameters():
+        if "weight" in name and param.requires_grad:
+            mask = (param != 0).float()
+            param.register_hook(lambda grad, mask=mask: grad * mask)
+
+def retrain_model(model, train_loader, val_loader, epochs=50):
+    model.train()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = nn.CrossEntropyLoss()
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+
+    freeze_zero_weights(model)  
+    best_val_acc = 0.0
+    best_model = copy.deepcopy(model)
+    for epoch in range(epochs):
+        train_loss, train_acc = train(model, train_loader, criterion, optimizer, device)
+        val_loss, val_acc = validate(model, val_loader, criterion, device)
+        
+        if hasattr(model, 'clip_weights'):
+            model.clip_weights(-1.0, 1.0)
+        current_lr = optimizer.param_groups[0]['lr']
+
+        print(f'Epoch [{epoch+1}/{epochs}], '
+            f'LR: {current_lr:.6f}, '
+            f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, '
+            f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%')
+        
+        scheduler.step()
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            best_model = copy.deepcopy(model)
+    return best_model
+
+
+
+
+
+
 # pruning method:
 # l1
 # l2
@@ -160,24 +375,18 @@ def apply_l1_pruning_by_param_path(model, param_path, pruning_percentage=0.5, ve
 
 def main():
     # input parameters
-    w = 1
-    a = 2
+    w = 4
+    a = 4
     model_name = "2c3f"
-    model_weight = "./model/best_2c3f_w1_a2_10.pth"
+    model_weight = "./model/best_2c3f_w4_a4_500.pth"
 
     # Analyze model sparsity
     print("Analyzing model sparsity...")
-    model = get_model(model_name, w, a)
-    model.load_state_dict(torch.load(model_weight))
-    model.to(device)
+    ori_model = get_model(model_name, w, a)
+    ori_model.load_state_dict(torch.load(model_weight))
+    ori_model.to(device)
 
-    sparsity_info = analyze_model_sparsity(model)
-
-    # 访问第一个参数的信息
-    first_param = sparsity_info[0]
-    print(f"Path: {first_param.path}")
-    print(f"Type: {first_param.layer_type}")
-    print(f"Sparsity: {first_param.sparsity}%")
+    sparsity_info = analyze_model_sparsity(ori_model)
 
     # 'path',        # 完整参数路径 (如 "conv1.weight")
     # 'layer_type',  # 层类型 (如 "Conv2d")
@@ -188,26 +397,84 @@ def main():
     # 遍历所有参数
 
     # deep copy the model
-    pmodel = copy.deepcopy(model).to(device)
+    # pmodel = copy.deepcopy(model).to(device)
 
-    for param in sparsity_info:
-        if param.param_count > 150: 
-            pmodel = apply_l1_pruning_by_param_path(pmodel, param.path, pruning_percentage=0.5, verbose=True)
+    # for param in sparsity_info:
+    #     if param.param_count > 150: 
+    #         pmodel = apply_l1_pruning_by_param_path(pmodel, param.path, pruning_percentage=0.5, verbose=True)
 
-    sparsity_info = analyze_model_sparsity(pmodel)
+    # sparsity_info = analyze_model_sparsity(pmodel)
 
+    # lock random seed
+    torch.manual_seed(1998)
+    torch.cuda.manual_seed(1998)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False  
+
+    model = copy.deepcopy(ori_model).to(device)
+    train_loader, val_loader, test_loader = get_dataloaders(dataset_name='MNIST')
     # Stage 1: sensitivity analysis
     print("\nStage 1: Sensitivity Analysis")
     # prune each layer seprately from 10% to 90% with step 10% and check accuracy decrease
-
+    original_acc = test(model, test_loader, device)
+    print(f"Original Test Accuracy: {original_acc:.2f}%")
+    #sensitivity_results = sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', step = 1)
+    # 保存结果
+    #save_to_csv(sensitivity_results, 'sensitivity_results.csv')
+    
+    # 读取结果
+    sensitivity_results = load_from_csv('sensitivity_results.csv')
     # Stage 2: With a tolerance, prune each layer with their specific pruning rate
+    converge = False
     print("\nStage 2: Pruning with Specific Rates")
+    accuracy_drop_tolerance = 5  # 5% accuracy drop tolerance
+    final_accuracy_drop_tolerance = 1  # 1% final accuracy drop tolerance
+    final_model = copy.deepcopy(model)
+    while not converge:
+        pruning_decisions = determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance)
+        # Print results
+        for decision in pruning_decisions:
+            print(f"Layer {decision.layer_path} - Safe pruning rate: {decision.pruning_rate*100:.1f}%")
 
-    # Stage 3: Re-train the model, try to fit accuracy dropdown acceptable
-
-    # Stage 4: if accuracy is not acceptable, try to change tolerance and pruning rate, do 4 again
+        pruned_model = prune_model_by_decisions(model, pruning_decisions, pruning_type='l1')
+        analyze_model_sparsity(pruned_model)
+        # Stage 3: Re-train the model, try to fit accuracy dropdown acceptable
+        print("\nStage 3: Re-training the Pruned Model")
+        # retrained_model = retrain_model(model, train_loader, val_loader, epochs=5)
+        # retrained_model = retrain_model(pruned_model, train_loader, num_epochs=5)
+        retrained_model = retrain_model(pruned_model, train_loader, val_loader, epochs=50)
+        test_acc = test(retrained_model, test_loader, device)
+        analyze_model_sparsity(retrained_model)
+        print(f"Test Accuracy after re-training: {test_acc:.2f}%")
+        # Stage 4: if accuracy is not acceptable, try to change tolerance and pruning rate, do 4 again
+        accuracy_drop = original_acc - test_acc
+        print(f"Accuracy drop after pruning and re-training: {accuracy_drop:.2f}%")
+        if accuracy_drop <= final_accuracy_drop_tolerance:
+            print("Final model is acceptable, try bigger accuracy_drop_tolerance")
+            accuracy_drop_tolerance += 1
+            final_model = copy.deepcopy(retrained_model)
+        else:
+            # Increase the tolerance for the next iteration
+            converge = True
+            print(f"Increasing accuracy drop tolerance to {accuracy_drop_tolerance}% for next iteration.")
 
     # Stage 5: export the model to ONNX and FINN format
+    print("\nStage 5: Exporting the Final Model")
+    sparsity_info = analyze_model_sparsity(final_model)
+    test_acc = test(final_model, test_loader, device)
+    print(f"Final Test Accuracy: {test_acc:.2f}%")
+
+    # save model to pth
+    model_save_path = f"./model/final_{model_name}_w{w}_a{a}_pruned.pth"
+    torch.save(final_model.state_dict(), model_save_path)
+
+    # check the total number of parameters
+    total_params = sum(info.param_count for info in sparsity_info)
+    total_non_zero = sum(info.non_zero for info in sparsity_info)
+    print(f"Total Parameters: {total_params:,}, Non-zero Parameters: {total_non_zero:,}")
+    compression_ratio = total_params / total_non_zero if total_non_zero > 0 else float('inf')
+    compression_ratio = compression_ratio * 32 / (w)  # assuming 32-bit to w-bit weight and a-bit activation quantization
+    print(f"Compression Ratio (pruning only): {compression_ratio:.2f}x")
 
 
 

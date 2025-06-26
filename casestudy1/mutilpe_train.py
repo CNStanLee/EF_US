@@ -32,8 +32,8 @@ def main():
 
     # w_set = [1, 2, 4, 8]
     # a_set = [1, 2, 4, 8]
-    w_set = [8]
-    a_set = [8]
+    w_set = [1,2,4]
+    a_set = [1,2,4]
     # model_names = ['2c3f', 'tfc', 'sfc', 'lfc']
     model_names = ['tfc', 'sfc', 'lfc']
     epochs = 500
