@@ -1,13 +1,61 @@
 Training 2c3f_relu with weight bit width 1 and activation bit width 2 for 10 epochs.
 Epoch [1/10], LR: 0.010000, Train Loss: 1.1909, Train Acc: 61.16%, Val Loss: 0.7388, Val Acc: 75.92%
-Epoch [2/10], LR: 0.010000, Train Loss: 0.5291, Train Acc: 82.86%, Val Loss: 0.6299, Val Acc: 79.39%
-Epoch [3/10], LR: 0.010000, Train Loss: 0.3658, Train Acc: 88.19%, Val Loss: 0.3990, Val Acc: 87.27%
-Epoch [4/10], LR: 0.010000, Train Loss: 0.3011, Train Acc: 90.32%, Val Loss: 0.3734, Val Acc: 87.96%
-Epoch [5/10], LR: 0.010000, Train Loss: 0.2573, Train Acc: 91.83%, Val Loss: 0.8229, Val Acc: 75.15%
-Epoch [6/10], LR: 0.010000, Train Loss: 0.2394, Train Acc: 92.38%, Val Loss: 0.3813, Val Acc: 88.56%
-Epoch [7/10], LR: 0.010000, Train Loss: 0.2184, Train Acc: 93.09%, Val Loss: 0.2480, Val Acc: 92.43%
-Epoch [8/10], LR: 0.010000, Train Loss: 0.2096, Train Acc: 93.36%, Val Loss: 0.2541, Val Acc: 91.69%
-Epoch [9/10], LR: 0.010000, Train Loss: 0.1968, Train Acc: 93.78%, Val Loss: 0.2258, Val Acc: 92.88%
-Epoch [10/10], LR: 0.010000, Train Loss: 0.1918, Train Acc: 93.93%, Val Loss: 0.2133, Val Acc: 93.56%
-Test Accuracy of the best model on the test images: 94.04%
+Epoch [2/10], LR: 0.010000, Train Loss: 0.5323, Train Acc: 82.87%, Val Loss: 1.0677, Val Acc: 65.23%
+Epoch [3/10], LR: 0.010000, Train Loss: 0.3701, Train Acc: 88.15%, Val Loss: 0.3633, Val Acc: 88.33%
+Epoch [4/10], LR: 0.010000, Train Loss: 0.3031, Train Acc: 90.45%, Val Loss: 0.3109, Val Acc: 90.19%
+Epoch [5/10], LR: 0.010000, Train Loss: 0.2560, Train Acc: 91.96%, Val Loss: 0.2557, Val Acc: 92.01%
+Epoch [6/10], LR: 0.010000, Train Loss: 0.2422, Train Acc: 92.35%, Val Loss: 0.2350, Val Acc: 92.42%
+Epoch [7/10], LR: 0.010000, Train Loss: 0.2223, Train Acc: 92.90%, Val Loss: 0.2362, Val Acc: 92.60%
+Epoch [8/10], LR: 0.010000, Train Loss: 0.2085, Train Acc: 93.43%, Val Loss: 0.2709, Val Acc: 91.06%
+Epoch [9/10], LR: 0.010000, Train Loss: 0.2010, Train Acc: 93.51%, Val Loss: 0.2919, Val Acc: 90.63%
+Epoch [10/10], LR: 0.010000, Train Loss: 0.1868, Train Acc: 94.12%, Val Loss: 0.3057, Val Acc: 90.44%
+Test Accuracy of the best model on the test images: 93.39%
+Model saved to ./model/2c3f_relu_w1_a2_10.pth
+Epoch [1/10], LR: 0.010000, Train Loss: 1.1909, Train Acc: 61.16%, Val Loss: 0.7388, Val Acc: 75.92%
+Epoch [2/10], LR: 0.010000, Train Loss: 0.5323, Train Acc: 82.87%, Val Loss: 1.0677, Val Acc: 65.23%
+Epoch [3/10], LR: 0.010000, Train Loss: 0.3737, Train Acc: 88.04%, Val Loss: 0.3331, Val Acc: 89.17%
+Epoch [4/10], LR: 0.010000, Train Loss: 0.3061, Train Acc: 90.26%, Val Loss: 0.3584, Val Acc: 88.33%
+Epoch [5/10], LR: 0.010000, Train Loss: 0.2598, Train Acc: 91.76%, Val Loss: 0.2577, Val Acc: 91.97%
+Epoch [6/10], LR: 0.010000, Train Loss: 0.2417, Train Acc: 92.38%, Val Loss: 0.4092, Val Acc: 86.47%
+Epoch [7/10], LR: 0.010000, Train Loss: 0.2216, Train Acc: 92.97%, Val Loss: 0.4957, Val Acc: 83.19%
+Epoch [8/10], LR: 0.010000, Train Loss: 0.2042, Train Acc: 93.60%, Val Loss: 0.2480, Val Acc: 91.95%
+Epoch [9/10], LR: 0.010000, Train Loss: 0.2010, Train Acc: 93.67%, Val Loss: 0.3113, Val Acc: 90.03%
+Epoch [10/10], LR: 0.010000, Train Loss: 0.1876, Train Acc: 94.12%, Val Loss: 0.2345, Val Acc: 92.34%
+Test Accuracy of the best model on the test images: 92.69%
+Model saved to ./model/2c3f_relu_w1_a2_10.pth
+Epoch [1/10], LR: 0.010000, Train Loss: 1.1909, Train Acc: 61.16%, Val Loss: 0.7388, Val Acc: 75.92%
+Epoch [2/10], LR: 0.010000, Train Loss: 0.5315, Train Acc: 82.87%, Val Loss: 0.6031, Val Acc: 80.17%
+Epoch [3/10], LR: 0.010000, Train Loss: 0.3663, Train Acc: 88.26%, Val Loss: 0.5225, Val Acc: 83.31%
+Epoch [4/10], LR: 0.010000, Train Loss: 0.3017, Train Acc: 90.37%, Val Loss: 0.2883, Val Acc: 91.02%
+Epoch [5/10], LR: 0.010000, Train Loss: 0.2599, Train Acc: 91.72%, Val Loss: 0.7316, Val Acc: 79.72%
+Epoch [6/10], LR: 0.010000, Train Loss: 0.2376, Train Acc: 92.55%, Val Loss: 0.2237, Val Acc: 93.08%
+Epoch [7/10], LR: 0.010000, Train Loss: 0.2156, Train Acc: 93.24%, Val Loss: 0.3656, Val Acc: 88.34%
+Epoch [8/10], LR: 0.010000, Train Loss: 0.2083, Train Acc: 93.43%, Val Loss: 0.4855, Val Acc: 84.02%
+Epoch [9/10], LR: 0.010000, Train Loss: 0.2037, Train Acc: 93.62%, Val Loss: 0.6653, Val Acc: 78.76%
+Epoch [10/10], LR: 0.010000, Train Loss: 0.1941, Train Acc: 93.86%, Val Loss: 0.2614, Val Acc: 91.87%
+Test Accuracy of the best model on the test images: 93.11%
+Model saved to ./model/2c3f_relu_w1_a2_10.pth
+Epoch [1/10], LR: 0.010000, Train Loss: 1.1909, Train Acc: 61.16%, Val Loss: 0.7388, Val Acc: 75.92%
+Epoch [2/10], LR: 0.010000, Train Loss: 0.5328, Train Acc: 82.84%, Val Loss: 0.9195, Val Acc: 69.01%
+Epoch [3/10], LR: 0.010000, Train Loss: 0.3687, Train Acc: 88.18%, Val Loss: 0.4972, Val Acc: 83.89%
+Epoch [4/10], LR: 0.010000, Train Loss: 0.3003, Train Acc: 90.54%, Val Loss: 0.3008, Val Acc: 90.49%
+Epoch [5/10], LR: 0.010000, Train Loss: 0.2634, Train Acc: 91.60%, Val Loss: 0.2788, Val Acc: 91.08%
+Epoch [6/10], LR: 0.010000, Train Loss: 0.2412, Train Acc: 92.41%, Val Loss: 0.3408, Val Acc: 89.39%
+Epoch [7/10], LR: 0.010000, Train Loss: 0.2253, Train Acc: 92.91%, Val Loss: 0.2587, Val Acc: 91.83%
+Epoch [8/10], LR: 0.010000, Train Loss: 0.2073, Train Acc: 93.49%, Val Loss: 0.5639, Val Acc: 80.84%
+Epoch [9/10], LR: 0.010000, Train Loss: 0.2002, Train Acc: 93.66%, Val Loss: 0.2195, Val Acc: 92.59%
+Epoch [10/10], LR: 0.010000, Train Loss: 0.1934, Train Acc: 93.98%, Val Loss: 0.2135, Val Acc: 93.22%
+Test Accuracy of the best model on the test images: 93.89%
+Model saved to ./model/2c3f_relu_w1_a2_10.pth
+Epoch [1/10], LR: 0.010000, Train Loss: 1.1920, Train Acc: 61.07%, Val Loss: 0.8301, Val Acc: 72.83%
+Epoch [2/10], LR: 0.010000, Train Loss: 0.5342, Train Acc: 82.64%, Val Loss: 0.4370, Val Acc: 86.24%
+Epoch [3/10], LR: 0.010000, Train Loss: 0.3759, Train Acc: 88.07%, Val Loss: 1.5292, Val Acc: 51.59%
+Epoch [4/10], LR: 0.010000, Train Loss: 0.3091, Train Acc: 90.17%, Val Loss: 0.4831, Val Acc: 84.58%
+Epoch [5/10], LR: 0.010000, Train Loss: 0.2645, Train Acc: 91.65%, Val Loss: 0.3090, Val Acc: 90.38%
+Epoch [6/10], LR: 0.010000, Train Loss: 0.2458, Train Acc: 92.17%, Val Loss: 0.2592, Val Acc: 91.78%
+Epoch [7/10], LR: 0.010000, Train Loss: 0.2194, Train Acc: 92.95%, Val Loss: 0.2396, Val Acc: 92.64%
+Epoch [8/10], LR: 0.010000, Train Loss: 0.2054, Train Acc: 93.64%, Val Loss: 0.2753, Val Acc: 91.17%
+Epoch [9/10], LR: 0.010000, Train Loss: 0.2009, Train Acc: 93.68%, Val Loss: 0.3729, Val Acc: 87.34%
+Epoch [10/10], LR: 0.010000, Train Loss: 0.1901, Train Acc: 94.04%, Val Loss: 0.2016, Val Acc: 93.81%
+Test Accuracy of the best model on the test images: 93.97%
 Model saved to ./model/2c3f_relu_w1_a2_10.pth
