@@ -246,7 +246,7 @@ class FC(Module):
         in_bit_width,
         in_channels,
         out_features,
-        in_features=(28, 28)):
+        in_features=(32, 32)):
         super(FC, self).__init__()
 
         self.features = ModuleList()
@@ -346,6 +346,7 @@ def get_model(model_name, w, a):
         in_channels=1,
         out_features=[64, 64, 64],
         num_classes=10)
+        return net
     elif model_name == 'sfc':
         net = FC(
         weight_bit_width=w,
@@ -354,6 +355,7 @@ def get_model(model_name, w, a):
         in_channels=1,
         out_features=[256, 256, 256],
         num_classes=10)
+        return net
     elif model_name == 'lfc':
         net = FC(
         weight_bit_width=w,
@@ -362,5 +364,6 @@ def get_model(model_name, w, a):
         in_channels=1,
         out_features=[1024, 1024, 1024],
         num_classes=10)
+        return net
     else:
         raise ValueError(f"Model {model_name} is not supported.")

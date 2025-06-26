@@ -151,6 +151,13 @@ def apply_l1_pruning_by_param_path(model, param_path, pruning_percentage=0.5, ve
     
     return model_copy
 
+# pruning method:
+# l1
+# l2
+# random
+# magnitude
+# SNIP
+
 def main():
     # input parameters
     w = 1
@@ -188,6 +195,20 @@ def main():
             pmodel = apply_l1_pruning_by_param_path(pmodel, param.path, pruning_percentage=0.5, verbose=True)
 
     sparsity_info = analyze_model_sparsity(pmodel)
+
+    # Stage 1: sensitivity analysis
+    print("\nStage 1: Sensitivity Analysis")
+    # prune each layer seprately from 10% to 90% with step 10% and check accuracy decrease
+
+    # Stage 2: With a tolerance, prune each layer with their specific pruning rate
+    print("\nStage 2: Pruning with Specific Rates")
+
+    # Stage 3: Re-train the model, try to fit accuracy dropdown acceptable
+
+    # Stage 4: if accuracy is not acceptable, try to change tolerance and pruning rate, do 4 again
+
+    # Stage 5: export the model to ONNX and FINN format
+
 
 
 

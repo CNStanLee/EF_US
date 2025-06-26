@@ -30,8 +30,10 @@ from train import train_try
 def main():
     #train_try(model_name='2c3f', w=8, a=8, epochs=10, random_seed=1998)
 
-    w_set = [1, 2, 4, 8]
-    a_set = [1, 2, 4, 8]
+    # w_set = [1, 2, 4, 8]
+    # a_set = [1, 2, 4, 8]
+    w_set = [8]
+    a_set = [8]
     # model_names = ['2c3f', 'tfc', 'sfc', 'lfc']
     model_names = ['tfc', 'sfc', 'lfc']
     epochs = 500

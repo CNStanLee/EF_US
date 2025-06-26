@@ -1,0 +1,5 @@
+Training tfc with weight bit width 1 and activation bit width 1 for 500 epochs.
+Epoch [1/500], LR: 0.010000, Train Loss: 1.8848, Train Acc: 34.31%, Val Loss: 1.3489, Val Acc: 54.89%
+Epoch [2/500], LR: 0.010000, Train Loss: 1.4484, Train Acc: 50.39%, Val Loss: 1.1836, Val Acc: 60.44%
+Epoch [3/500], LR: 0.010000, Train Loss: 1.3500, Train Acc: 54.39%, Val Loss: 1.1114, Val Acc: 63.41%
+Epoch [4/500], LR: 0.010000, Train Loss: 1.2973, Train Acc: 56.84%, Val Loss: 1.0377, Val Acc: 66.02%
