@@ -44,11 +44,12 @@ from train import train_try
 
 # ----- USER PARAS ------ #
 
-epochs = 10
+epochs = 50
 model_name = '2c3f_relu'
 #model_name = '2c3f'
-weight = 1
-activation = 2
+# 2c3f relu is ok for generation, but fully unfold not tested yet
+weight = 4
+activation = 4
 model_ready_name = model_name + '_w'+ str(weight) + '_a' + str(activation) + '_'+ str(epochs) + '_ready.onnx'
 try_name = "/model_generation_test"
 folding_config_file = "./folding_config/auto.json"
@@ -66,6 +67,7 @@ pynq_part_map["ZCU111"] = "xczu28dr-ffvg1517-2-e"
 pynq_part_map["RFSoC2x2"] = "xczu28dr-ffvg1517-2-e"
 pynq_part_map["RFSoC4x2"] = "xczu48dr-ffvg1517-2-e"
 pynq_part_map["KV260_SOM"] = "xck26-sfvc784-2LV-c"
+pynq_part_map["U50"] = "xcu50-fsvh2104-2L-e"
 
 
 build_dir = "./build" + try_name
@@ -138,7 +140,7 @@ cfg_stitched_ip = build.DataflowBuildConfig(
     mvau_wwidth_max     = 10000,
     target_fps          = 1000000,
     synth_clk_period_ns = 10.0,    
-    fpga_part           = pynq_part_map["ZCU104"],
+    fpga_part           = pynq_part_map["U50"],
     # folding_config_file = folding_config_file,
     generate_outputs=[
         build_cfg.DataflowOutputType.STITCHED_IP,

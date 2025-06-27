@@ -120,7 +120,7 @@ def train_try(model_name='2c3f', w=8, a=8, epochs=500, random_seed=1998):
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=epochs/5, gamma=0.1)
 
     # train temp parameters
     best_val_acc = 0.0

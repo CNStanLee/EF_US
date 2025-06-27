@@ -166,13 +166,15 @@ class CNV_RELU(Module):
                     QuantIdentity(act_quant=CommonActQuant, bit_width=act_bit_width))
             else:
                 self.conv_features.append(
-                    qnn.QuantReLU(#quant_type=QuantType.INT, 
-                                    bit_width=act_bit_width, # for relu, only support >2
-                                    min_val=- 1.0,
-                                    #max_val= 1- 1/128.0,
-                                    max_val=1.0 - 2.0 ** (-7),
-                                    restrict_scaling_type=RestrictValueType.POWER_OF_TWO,
-                                    scaling_impl_type=ScalingImplType.CONST ))
+                    # qnn.QuantReLU(#quant_type=QuantType.INT, 
+                    #                 bit_width=act_bit_width, # for relu, only support >2
+                    #                 min_val=- 1.0,
+                    #                 #max_val= 1- 1/128.0,
+                    #                 max_val=1.0 - 2.0 ** (-7),
+                    #                 restrict_scaling_type=RestrictValueType.POWER_OF_TWO,
+                    #                 scaling_impl_type=ScalingImplType.CONST ))
+                      qnn.QuantReLU(
+                        bit_width=act_bit_width, return_quant_tensor=True))
             if is_pool_enabled:
                 self.conv_features.append(MaxPool2d(kernel_size=2)) # avg pool not supported in finn
 
@@ -190,13 +192,15 @@ class CNV_RELU(Module):
                     QuantIdentity(act_quant=CommonActQuant, bit_width=act_bit_width))
             else:
                 self.linear_features.append(
-                    qnn.QuantReLU(#quant_type=QuantType.INT, 
-                                        bit_width=act_bit_width, 
-                                        min_val=- 1.0,
-                                        #max_val= 1- 1/128.0,
-                                        max_val=1.0 - 2.0 ** (-7),
-                                        restrict_scaling_type=RestrictValueType.POWER_OF_TWO,
-                                        scaling_impl_type=ScalingImplType.CONST ))
+                    # qnn.QuantReLU(#quant_type=QuantType.INT, 
+                    #                 bit_width=act_bit_width, # for relu, only support >2
+                    #                 min_val=- 1.0,
+                    #                 #max_val= 1- 1/128.0,
+                    #                 max_val=1.0 - 2.0 ** (-7),
+                    #                 restrict_scaling_type=RestrictValueType.POWER_OF_TWO,
+                    #                 scaling_impl_type=ScalingImplType.CONST ))
+                      qnn.QuantReLU(
+                        bit_width=act_bit_width, return_quant_tensor=True))
 
         self.linear_features.append(
             QuantLinear(
