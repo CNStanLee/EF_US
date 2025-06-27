@@ -378,7 +378,7 @@ def main():
     w = 4
     a = 4
     model_name = "2c3f"
-    model_weight = "./model/best_2c3f_w4_a4_500.pth"
+    model_weight = "./model/best_2c3f_relu_w4_a4_500.pth"
 
     # Analyze model sparsity
     print("Analyzing model sparsity...")
