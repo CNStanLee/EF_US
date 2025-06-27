@@ -43,12 +43,12 @@ def save_to_csv(results, filename):
         writer.writerow(results[0]._fields)
         # 写入数据
         for res in results:
-            writer.writerow([res.layer_path, res.pruning_percentage, 
+            writer.writerow([res.layer_path, res.param_count ,res.pruning_percentage, 
                             res.test_accuracy, res.accuray_drop])
 
 # 从CSV读取结果
 def load_from_csv(filename):
-    PruningResult = namedtuple('PruningResult', ['layer_path', 'pruning_percentage', 'test_accuracy', 'accuray_drop'])
+    PruningResult = namedtuple('PruningResult', ['layer_path', 'param_count','pruning_percentage', 'test_accuracy', 'accuray_drop'])
     results = []
     with open(filename, 'r') as f:
         reader = csv.reader(f)
@@ -56,11 +56,12 @@ def load_from_csv(filename):
         for row in reader:
             # 转换数据类型
             layer_path = row[0]
-            pruning_percentage = float(row[1])
-            test_accuracy = float(row[2])
-            accuray_drop = float(row[3])
+            param_count = float(row[1])  # 添加参数计数
+            pruning_percentage = float(row[2])
+            test_accuracy = float(row[3])
+            accuray_drop = float(row[4])
             results.append(PruningResult(
-                layer_path, pruning_percentage, test_accuracy, accuray_drop
+                layer_path, param_count, pruning_percentage, test_accuracy, accuray_drop
             ))
     return results
 
@@ -232,12 +233,13 @@ def layer_pruning(model, param_path, pruning_percentage=0.5, pruning_type='l1'):
 
 def sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', step = 20):
     # 定义命名元组类型
-    PruningResult = namedtuple('PruningResult', ['layer_path', 'pruning_percentage', 'test_accuracy', 'accuray_drop'])
+    PruningResult = namedtuple('PruningResult', ['layer_path', 'param_count','pruning_percentage', 'test_accuracy', 'accuray_drop'])
     
     original_acc = test(model, test_loader, device)
     results = []
     for param in sparsity_info:
         layer_path = param.path
+        param_count = param.param_count
         for percentage in range(0, 100, step):
             percentage /= 100.0
             # Apply pruning
@@ -247,6 +249,7 @@ def sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', s
             # 创建命名元组并添加到结果列表
             result = PruningResult(
                 layer_path=layer_path,
+                param_count=param_count,
                 pruning_percentage=percentage,
                 test_accuracy=test_acc,
                 accuray_drop= original_acc - test_acc
@@ -259,7 +262,7 @@ def sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', s
 
 from collections import namedtuple
 
-def determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance=0.05):
+def determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance=0.05, threshold=200):
     """
     根据敏感度分析结果确定每层的安全剪枝率
     
@@ -293,6 +296,10 @@ def determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance=0.
             if result.accuray_drop <= accuracy_drop_tolerance:
                 safe_rate = result.pruning_percentage
                 break  # 找到第一个满足条件的即停止
+
+        # when layer parameter count is too small, skip pruning
+        if results[0].param_count < threshold:
+            safe_rate = 0.0
         
         decisions.append(PruningDecision(layer_path, safe_rate))
     
@@ -333,11 +340,11 @@ def freeze_zero_weights(model):
             mask = (param != 0).float()
             param.register_hook(lambda grad, mask=mask: grad * mask)
 
-def retrain_model(model, train_loader, val_loader, epochs=50):
+def retrain_model(model, train_loader, val_loader, epochs=20):
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss()
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=epochs/5, gamma=0.1)
 
     freeze_zero_weights(model)  
     best_val_acc = 0.0
@@ -377,7 +384,7 @@ def main():
     # input parameters
     w = 4
     a = 4
-    model_name = "2c3f"
+    model_name = "2c3f_relu"
     model_weight = "./model/best_2c3f_relu_w4_a4_500.pth"
 
     # Analyze model sparsity
@@ -416,19 +423,29 @@ def main():
     # Stage 1: sensitivity analysis
     print("\nStage 1: Sensitivity Analysis")
     # prune each layer seprately from 10% to 90% with step 10% and check accuracy decrease
-    original_acc = test(model, test_loader, device)
+    # original_acc = test(model, test_loader, device)
+
+    original_acc = 0
+    for i in range(10):
+        original_acc_1 = test(model, test_loader, device)
+        original_acc += original_acc_1
+        #print(original_acc_1)
+    original_acc /= 10
     print(f"Original Test Accuracy: {original_acc:.2f}%")
-    #sensitivity_results = sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', step = 1)
-    # 保存结果
-    #save_to_csv(sensitivity_results, 'sensitivity_results.csv')
     
-    # 读取结果
-    sensitivity_results = load_from_csv('sensitivity_results.csv')
+    sensitivity_result_name = model_name + '_sensitivity_results.csv'
+    if not os.path.exists(sensitivity_result_name):
+        sensitivity_results = sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', step = 1)
+        # save
+        save_to_csv(sensitivity_results, model_name +'_sensitivity_results.csv')
+    else:
+        # read
+        sensitivity_results = load_from_csv(model_name +'_sensitivity_results.csv')
     # Stage 2: With a tolerance, prune each layer with their specific pruning rate
     converge = False
     print("\nStage 2: Pruning with Specific Rates")
-    accuracy_drop_tolerance = 5  # 5% accuracy drop tolerance
-    final_accuracy_drop_tolerance = 1  # 1% final accuracy drop tolerance
+    accuracy_drop_tolerance = 83 # 5% accuracy drop tolerance
+    final_accuracy_drop_tolerance = 30  # 1% final accuracy drop tolerance
     final_model = copy.deepcopy(model)
     while not converge:
         pruning_decisions = determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance)
@@ -442,16 +459,25 @@ def main():
         print("\nStage 3: Re-training the Pruned Model")
         # retrained_model = retrain_model(model, train_loader, val_loader, epochs=5)
         # retrained_model = retrain_model(pruned_model, train_loader, num_epochs=5)
-        retrained_model = retrain_model(pruned_model, train_loader, val_loader, epochs=50)
-        test_acc = test(retrained_model, test_loader, device)
+        retrained_model = retrain_model(pruned_model, train_loader, val_loader, epochs=200)
+        
         analyze_model_sparsity(retrained_model)
-        print(f"Test Accuracy after re-training: {test_acc:.2f}%")
+        
         # Stage 4: if accuracy is not acceptable, try to change tolerance and pruning rate, do 4 again
+        # find 10 times average accuracy
+        test_acc = 0
+        for i in range(10):
+            test_acc_1 = test(retrained_model, test_loader, device)
+            test_acc += test_acc_1
+        test_acc /= 10
+
+        
+        print(f"Test Accuracy after re-training: {test_acc:.2f}%")
         accuracy_drop = original_acc - test_acc
         print(f"Accuracy drop after pruning and re-training: {accuracy_drop:.2f}%")
         if accuracy_drop <= final_accuracy_drop_tolerance:
             print("Final model is acceptable, try bigger accuracy_drop_tolerance")
-            accuracy_drop_tolerance += 1
+            accuracy_drop_tolerance += 2
             final_model = copy.deepcopy(retrained_model)
         else:
             # Increase the tolerance for the next iteration
@@ -463,6 +489,11 @@ def main():
     sparsity_info = analyze_model_sparsity(final_model)
     test_acc = test(final_model, test_loader, device)
     print(f"Final Test Accuracy: {test_acc:.2f}%")
+
+    final_model = retrain_model(final_model, train_loader, val_loader, epochs=200)
+    test_acc = test(final_model, test_loader, device)
+    print(f"Final Test Accuracy: {test_acc:.2f}%")
+    analyze_model_sparsity(final_model)
 
     # save model to pth
     model_save_path = f"./model/final_{model_name}_w{w}_a{a}_pruned.pth"
@@ -476,8 +507,152 @@ def main():
     compression_ratio = compression_ratio * 32 / (w)  # assuming 32-bit to w-bit weight and a-bit activation quantization
     print(f"Compression Ratio (pruning only): {compression_ratio:.2f}x")
 
+def test_pruned_model():
 
 
+    w = 4
+    a = 4
+    model_name = "2c3f_relu"
+    model_weight = "./model/best_2c3f_relu_w4_a4_500.pth"
+    # load the model
+    model = get_model(model_name, w, a)
+    model.load_state_dict(torch.load(model_weight))
+    model.to(device)
+
+    # get the test dataloader
+    train_loader, val_loader, test_loader = get_dataloaders(dataset_name='MNIST')
+
+    pruned_model = layer_pruning(
+            model=model,
+            param_path='linear_features.0.weight',
+            pruning_percentage=0.95,
+            pruning_type='l1'
+        )
+    pruned_model = layer_pruning(
+            model=pruned_model,
+            param_path='conv_features.9.weight',
+            pruning_percentage=0.9,
+            pruning_type='l1'
+        )
+    # test the model
+    test_acc = test(pruned_model, test_loader, device)
+    print(f"Test Accuracy of the pruned model: {test_acc:.2f}%")
+    retrained_model = retrain_model(pruned_model, train_loader, val_loader, epochs=100)
+    test_acc = test(retrained_model, test_loader, device)
+    print(f"Test Accuracy of the pruned model: {test_acc:.2f}%")
+    analyze_model_sparsity(retrained_model)
+
+def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_type='l1'):
+
+    accuracy_drop_tolerance = 60  # 40% layer accuracy drop tolerance
+    final_accuracy_drop_tolerance = 10  # 1% final accuracy drop tolerance
+    retrain_epochs = 20  # number of epochs to retrain the model after pruning
+    final_retrain_epochs = 100  # number of epochs to retrain the final model after pruning
+    sensitivity_step = 1    # step size for sensitivity analysis, 1% for each step
+    tolerance_step = 1  # step size for increasing accuracy drop tolerance
+    # load the model
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # load the model
+    # ori_model = get_model(model_name, w, a)
+    # ori_model.load_state_dict(torch.load(model_weight))
+    ori_model.to(device)
+
+    sparsity_info = analyze_model_sparsity(ori_model)
+
+    # init
+    torch.manual_seed(1998)
+    torch.cuda.manual_seed(1998)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False  
+    model = copy.deepcopy(ori_model).to(device)
+    train_loader, val_loader, test_loader = get_dataloaders(dataset_name)
+    # Stage 1: sensitivity analysis
+    print("\nStage 1: Sensitivity Analysis")
+
+    original_acc = 0
+    for i in range(10):
+        original_acc_1 = test(model, test_loader, device)
+        original_acc += original_acc_1
+    original_acc /= 10
+    print(f"Original Test Accuracy: {original_acc:.2f}%")
+    
+    sensitivity_result_name = model_name + '_sensitivity_results.csv'
+    if not os.path.exists(sensitivity_result_name):
+        sensitivity_results = sensitivity_analysis(model, test_loader, sparsity_info, pruning_type=pruning_type, step = sensitivity_step)
+        save_to_csv(sensitivity_results, model_name +'_sensitivity_results.csv')
+    else:
+        sensitivity_results = load_from_csv(model_name +'_sensitivity_results.csv')
+    # Stage 2: With a tolerance, prune each layer with their specific pruning rate
+    converge = False
+    print("\nStage 2: Pruning with Specific Rates")
+    # final_model = copy.deepcopy(model)
+    while not converge:
+        pruning_decisions = determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance)
+        # Print results
+        for decision in pruning_decisions:
+            print(f"Layer {decision.layer_path} - Safe pruning rate: {decision.pruning_rate*100:.1f}%")
+
+        pruned_model = prune_model_by_decisions(model, pruning_decisions, pruning_type=pruning_type)
+        # Stage 3: Re-train the model, try to fit accuracy dropdown acceptable
+        print("\nStage 3: Re-training the Pruned Model")
+        retrained_model = retrain_model(pruned_model, train_loader, val_loader, epochs=retrain_epochs)
+        analyze_model_sparsity(retrained_model)
+        # Stage 4: if accuracy is not acceptable, try to change tolerance and pruning rate, do 4 again
+        # find 10 times average accuracy
+        test_acc = 0
+        for i in range(10):
+            test_acc_1 = test(retrained_model, test_loader, device)
+            test_acc += test_acc_1
+        test_acc /= 10
+
+        #final_model = copy.deepcopy(retrained_model)
+        print(f"Test Accuracy after re-training: {test_acc:.2f}%")
+        accuracy_drop = original_acc - test_acc
+        print(f"Accuracy drop after pruning and re-training: {accuracy_drop:.2f}%")
+        if accuracy_drop <= final_accuracy_drop_tolerance:
+            print("Final model is acceptable, try bigger accuracy_drop_tolerance")
+            print(f"Current layer accuracy dropdown tolerance: {accuracy_drop_tolerance}" )
+            accuracy_drop_tolerance += tolerance_step
+            final_model = copy.deepcopy(retrained_model)
+        else:
+            # Increase the tolerance for the next iteration
+            converge = True
+            print(f"end.")
+        # final_model = copy.deepcopy(retrained_model)
+    test_acc = test(final_model, test_loader, device)
+    print(f"Final Test Accuracy: {test_acc:.2f}%")
+    # Stage 5: export the model to ONNX and FINN format
+    print("\nStage 5: Final Retraining")
+    final_model2 = retrain_model(final_model, train_loader, val_loader, epochs=final_retrain_epochs)
+    test_acc = test(final_model2, test_loader, device)
+    print(f"Final Test Accuracy: {test_acc:.2f}%")
+    analyze_model_sparsity(final_model2)
+    # check the total number of parameters
+    total_params = sum(info.param_count for info in sparsity_info)
+    total_non_zero = sum(info.non_zero for info in sparsity_info)
+    print(f"Total Parameters: {total_params:,}, Non-zero Parameters: {total_non_zero:,}")
+    compression_ratio = total_params / total_non_zero if total_non_zero > 0 else float('inf')
+    compression_ratio = compression_ratio * 32 / (w)  # assuming 32-bit to w-bit weight and a-bit activation quantization
+    print(f"Compression Ratio: {compression_ratio:.2f}x")
+    print("\nStage 6: Exporting the Final Model")
+    # save model to pth
+    model_save_path = f"./model/final_{model_name}_w{w}_a{a}_pruned.pth"
+    torch.save(final_model2.state_dict(), model_save_path)
+
+ 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    # test_pruned_model()
+    w = 4
+    a = 4
+    model_name = "2c3f_relu"
+    model_weight = "./model/best_2c3f_relu_w4_a4_500.pth"
+
+    # Analyze model sparsity
+    print("Analyzing model sparsity...")
+    ori_model = get_model(model_name, w, a)
+    ori_model.load_state_dict(torch.load(model_weight))
+    ori_model.to(device)
+    auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_type='l1')

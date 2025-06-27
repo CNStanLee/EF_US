@@ -146,10 +146,6 @@ def train_try(model_name='2c3f', w=8, a=8, epochs=500, random_seed=1998):
             model.clip_weights(-1.0, 1.0)
         current_lr = optimizer.param_groups[0]['lr']
         
-        # print(f'Epoch [{epoch+1}/{epochs}], '
-        #     f'LR: {current_lr:.6f}, '
-        #     f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, '
-        #     f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%')
         log(f'Epoch [{epoch+1}/{epochs}], '
             f'LR: {current_lr:.6f}, '
             f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, '
@@ -169,7 +165,7 @@ def train_try(model_name='2c3f', w=8, a=8, epochs=500, random_seed=1998):
     torch.save(model.state_dict(), model_save_path)
     #print(f'Model saved to {model_save_path}')
     log(f'Model saved to {model_save_path}')
-    return  model
+    return  model#, model_name, model_save_path
 
 
 def main():

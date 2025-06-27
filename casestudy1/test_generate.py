@@ -104,7 +104,23 @@ print(f"RTLSim output directory: {rtlsim_output_dir}")
 
 
 # test training
-model = train_try(model_name=model_name, w=weight, a=activation, epochs=epochs, random_seed=1998)
+#model = train_try(model_name=model_name, w=weight, a=activation, epochs=epochs, random_seed=1998)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
+model_name = "2c3f_relu"
+model_weight = "./model/final_2c3f_relu_w4_a4_pruned.pth"
+
+w = 4
+a = 4
+# Analyze model sparsity
+print("Analyzing model sparsity...")
+model = get_model(model_name, w, a)
+model.load_state_dict(torch.load(model_weight))
+model.to(device)
+
+
+
 # test model generation
 ready_model_filename = model_dir + "/" + model_ready_name
 input_shape = (1, 1, 32, 32)
