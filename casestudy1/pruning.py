@@ -544,9 +544,9 @@ def test_pruned_model():
 
 def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_type='l1'):
 
-    accuracy_drop_tolerance = 60  # 40% layer accuracy drop tolerance
+    accuracy_drop_tolerance = 30  # 40% layer accuracy drop tolerance
     final_accuracy_drop_tolerance = 10  # 1% final accuracy drop tolerance
-    retrain_epochs = 20  # number of epochs to retrain the model after pruning
+    retrain_epochs = 10  # number of epochs to retrain the model after pruning
     final_retrain_epochs = 100  # number of epochs to retrain the final model after pruning
     sensitivity_step = 1    # step size for sensitivity analysis, 1% for each step
     tolerance_step = 1  # step size for increasing accuracy drop tolerance
@@ -568,7 +568,7 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
     model = copy.deepcopy(ori_model).to(device)
     train_loader, val_loader, test_loader = get_dataloaders(dataset_name)
     # Stage 1: sensitivity analysis
-    print("\nStage 1: Sensitivity Analysis")
+    print("\nPruning Stage 1: Sensitivity Analysis")
 
     original_acc = 0
     for i in range(10):
@@ -585,8 +585,9 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
         sensitivity_results = load_from_csv(model_name +'_sensitivity_results.csv')
     # Stage 2: With a tolerance, prune each layer with their specific pruning rate
     converge = False
-    print("\nStage 2: Pruning with Specific Rates")
+    print("\nPruning Stage 2: Pruning with Specific Rates")
     # final_model = copy.deepcopy(model)
+    got_final_model = False
     while not converge:
         pruning_decisions = determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance)
         # Print results
@@ -595,7 +596,7 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
 
         pruned_model = prune_model_by_decisions(model, pruning_decisions, pruning_type=pruning_type)
         # Stage 3: Re-train the model, try to fit accuracy dropdown acceptable
-        print("\nStage 3: Re-training the Pruned Model")
+        print("\nPruning Stage 3: Re-training the Pruned Model")
         retrained_model = retrain_model(pruned_model, train_loader, val_loader, epochs=retrain_epochs)
         analyze_model_sparsity(retrained_model)
         # Stage 4: if accuracy is not acceptable, try to change tolerance and pruning rate, do 4 again
@@ -615,15 +616,19 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
             print(f"Current layer accuracy dropdown tolerance: {accuracy_drop_tolerance}" )
             accuracy_drop_tolerance += tolerance_step
             final_model = copy.deepcopy(retrained_model)
+            got_final_model = True
         else:
             # Increase the tolerance for the next iteration
             converge = True
+            if not got_final_model:
+                print('first try not converge')
+                final_model = copy.deepcopy(retrained_model)
             print(f"end.")
         # final_model = copy.deepcopy(retrained_model)
     test_acc = test(final_model, test_loader, device)
     print(f"Final Test Accuracy: {test_acc:.2f}%")
     # Stage 5: export the model to ONNX and FINN format
-    print("\nStage 5: Final Retraining")
+    print("\nPruning Stage 5: Final Retraining")
     final_model2 = retrain_model(final_model, train_loader, val_loader, epochs=final_retrain_epochs)
     test_acc = test(final_model2, test_loader, device)
     print(f"Final Test Accuracy: {test_acc:.2f}%")
@@ -635,10 +640,12 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
     compression_ratio = total_params / total_non_zero if total_non_zero > 0 else float('inf')
     compression_ratio = compression_ratio * 32 / (w)  # assuming 32-bit to w-bit weight and a-bit activation quantization
     print(f"Compression Ratio: {compression_ratio:.2f}x")
-    print("\nStage 6: Exporting the Final Model")
+    print("\nPruning Stage 6: Exporting the Final Model")
     # save model to pth
     model_save_path = f"./model/final_{model_name}_w{w}_a{a}_pruned.pth"
     torch.save(final_model2.state_dict(), model_save_path)
+    print(f"Model saved to {model_save_path}")
+    return final_model2
 
  
 

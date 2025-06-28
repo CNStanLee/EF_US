@@ -1,0 +1,28 @@
+
+****** Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2022.2 (64-bit)
+  **** SW Build 3670227 on Oct 13 2022
+  **** IP Build 3669848 on Fri Oct 14 08:30:02 MDT 2022
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+
+source /tools/Xilinx/Vitis_HLS/2022.2/scripts/vitis_hls/hls.tcl -notrace
+INFO: [HLS 200-10] Running '/tools/Xilinx/Vitis_HLS/2022.2/bin/unwrapped/lnx64.o/vitis_hls'
+/tools/Xilinx/Vitis_HLS/2022.2/tps/tcl/tcl8.5/tzdata/Europe/Dublin can't be opened.
+INFO: [HLS 200-10] For user 'root' on host 'finn_dev_root' (Linux_x86_64 version 6.8.0-60-generic) on Fri Jun 27 23:04:55 +0000 2025
+INFO: [HLS 200-10] On os Ubuntu 22.04.1 LTS
+INFO: [HLS 200-10] In directory '/home/changhong/prj/finn/script/EF_US/casestudy1/tmp/model_generation_test/code_gen_ipgen_StreamingMaxPool_hls_0_1lpteccp'
+Sourcing Tcl script './tmp/model_generation_test/code_gen_ipgen_StreamingMaxPool_hls_0_1lpteccp/hls_syn_StreamingMaxPool_hls_0.tcl'
+INFO: [HLS 200-1510] Running: source ./tmp/model_generation_test/code_gen_ipgen_StreamingMaxPool_hls_0_1lpteccp/hls_syn_StreamingMaxPool_hls_0.tcl
+./tmp/model_generation_test/code_gen_ipgen_StreamingMaxPool_hls_0_1lpteccp/hls_syn_StreamingMaxPool_hls_0.tcl can't be opened.
+couldn't read file "./tmp/model_generation_test/code_gen_ipgen_StreamingMaxPool_hls_0_1lpteccp/hls_syn_StreamingMaxPool_hls_0.tcl": no such file or directory
+    while executing
+"source ./tmp/model_generation_test/code_gen_ipgen_StreamingMaxPool_hls_0_1lpteccp/hls_syn_StreamingMaxPool_hls_0.tcl"
+    invoked from within
+"hls::main ./tmp/model_generation_test/code_gen_ipgen_StreamingMaxPool_hls_0_1lpteccp/hls_syn_StreamingMaxPool_hls_0.tcl"
+    ("uplevel" body line 1)
+    invoked from within
+"uplevel 1 hls::main {*}$newargs"
+    (procedure "hls_proc" line 16)
+    invoked from within
+"hls_proc [info nameofexecutable] $argv"
+INFO: [HLS 200-112] Total CPU user time: 0.3 seconds. Total CPU system time: 0.05 seconds. Total elapsed time: 0.28 seconds; peak allocated memory: 98.887 MB.
+INFO: [Common 17-206] Exiting vitis_hls at Fri Jun 27 23:04:55 2025...
