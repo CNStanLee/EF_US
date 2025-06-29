@@ -1,0 +1,9 @@
+[2025-06-29 14:30:30,703] Running step: step_qonnx_to_finn [1/10]
+[2025-06-29 14:30:30,870] Running step: step_tidy_up [2/10]
+[2025-06-29 14:30:30,902] Running step: step_streamline [3/10]
+[2025-06-29 14:30:31,469] /home/changhong/prj/finn/src/finn/transformation/streamline/absorb.py:166: RuntimeWarning: divide by zero encountered in divide
+[2025-06-29 14:30:31,469]   Tnew = T / A.reshape(-1, 1)
+[2025-06-29 14:30:32,657] /usr/local/lib/python3.10/dist-packages/qonnx/transformation/infer_data_layouts.py:127: UserWarning: Assuming 4D input is NCHW
+[2025-06-29 14:30:32,657]   warnings.warn("Assuming 4D input is NCHW")
+[2025-06-29 14:30:32,665] Running step: step_convert_to_hw [4/10]
+[2025-06-29 14:30:32,702] Running step: step_create_dataflow_partition [5/10]

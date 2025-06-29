@@ -1,0 +1,35 @@
+[2025-06-29 09:17:08,952] Running step: step_qonnx_to_finn [1/10]
+[2025-06-29 09:17:09,011] Running step: step_tidy_up [2/10]
+[2025-06-29 09:17:09,030] Running step: step_streamline [3/10]
+[2025-06-29 09:17:09,658] /usr/local/lib/python3.10/dist-packages/qonnx/transformation/infer_data_layouts.py:127: UserWarning: Assuming 4D input is NCHW
+[2025-06-29 09:17:09,658]   warnings.warn("Assuming 4D input is NCHW")
+[2025-06-29 09:17:09,660] Running step: step_convert_to_hw [4/10]
+[2025-06-29 09:17:09,668] Running step: step_create_dataflow_partition [5/10]
+[2025-06-29 09:17:09,672] Running step: step_specialize_layers [6/10]
+[2025-06-29 09:17:09,674] Running step: step_target_fps_parallelization [7/10]
+[2025-06-29 09:17:09,679] /home/changhong/prj/finn/src/finn/transformation/fpgadataflow/set_folding.py:233: UserWarning: Node MVAU_hls_0 is bottleneck with 32 cycles, running second pass
+[2025-06-29 09:17:09,679]   warnings.warn(
+[2025-06-29 09:17:09,685] Running step: step_apply_folding_config [8/10]
+[2025-06-29 09:17:09,686] Running step: step_minimize_bit_width [9/10]
+[2025-06-29 09:17:09,689] /home/changhong/prj/finn/src/finn/custom_op/fpgadataflow/matrixvectoractivation.py:496: UserWarning: Clipping some thresholds in MVAU_hls_1
+[2025-06-29 09:17:09,689]   warnings.warn("Clipping some thresholds in %s" % self.onnx_node.name)
+[2025-06-29 09:17:09,690] /home/changhong/prj/finn/src/finn/custom_op/fpgadataflow/matrixvectoractivation.py:496: UserWarning: Clipping some thresholds in MVAU_hls_2
+[2025-06-29 09:17:09,690]   warnings.warn("Clipping some thresholds in %s" % self.onnx_node.name)
+[2025-06-29 09:17:09,694] Running step: step_generate_estimate_reports [10/10]
+[2025-06-29 09:17:09,797] Running step: step_qonnx_to_finn [1/19]
+[2025-06-29 09:17:09,853] Running step: step_tidy_up [2/19]
+[2025-06-29 09:17:09,872] Running step: step_streamline [3/19]
+[2025-06-29 09:17:10,493] /usr/local/lib/python3.10/dist-packages/qonnx/transformation/infer_data_layouts.py:127: UserWarning: Assuming 4D input is NCHW
+[2025-06-29 09:17:10,493]   warnings.warn("Assuming 4D input is NCHW")
+[2025-06-29 09:17:10,495] Running step: step_convert_to_hw [4/19]
+[2025-06-29 09:17:10,504] Running step: step_create_dataflow_partition [5/19]
+[2025-06-29 09:17:10,507] Running step: step_specialize_layers [6/19]
+[2025-06-29 09:17:10,510] Running step: step_target_fps_parallelization [7/19]
+[2025-06-29 09:17:10,515] Running step: step_apply_folding_config [8/19]
+[2025-06-29 09:17:10,515] Running step: step_minimize_bit_width [9/19]
+[2025-06-29 09:17:10,518] /home/changhong/prj/finn/src/finn/custom_op/fpgadataflow/matrixvectoractivation.py:496: UserWarning: Clipping some thresholds in MVAU_hls_1
+[2025-06-29 09:17:10,518]   warnings.warn("Clipping some thresholds in %s" % self.onnx_node.name)
+[2025-06-29 09:17:10,520] /home/changhong/prj/finn/src/finn/custom_op/fpgadataflow/matrixvectoractivation.py:496: UserWarning: Clipping some thresholds in MVAU_hls_2
+[2025-06-29 09:17:10,520]   warnings.warn("Clipping some thresholds in %s" % self.onnx_node.name)
+[2025-06-29 09:17:10,524] Running step: step_generate_estimate_reports [10/19]
+[2025-06-29 09:17:10,525] Running step: step_hw_codegen [11/19]

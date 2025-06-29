@@ -164,12 +164,13 @@ def estimate_ip(model_name, model, weight, activation, try_name= "/model_generat
     build.build_dataflow_cfg(ready_model_filename, cfg_estimates)
 
 if __name__ == "__main__":
-    model_name = 'sfc'
+    model_name = 'tfc'
     weight = 1 
     activation = 1
     epochs = 10
     model = train_try(model_name=model_name, w=weight, a=activation, epochs=epochs, random_seed=1998)
     model = get_model(model_name, weight, activation)
     model.load_state_dict(torch.load(f"./model/best_{model_name}_w{weight}_a{activation}_{epochs}.pth"))
-    model.to(torch.device("cpu"))  # Ensure
+    #model.load_state_dict(torch.load(f"./model/final_{model_name}_w{weight}_a{activation}_l1_pruned.pth"))
+    #model.to(torch.device("cpu"))  # Ensure
     estimate_ip(model_name=model_name, model = model, weight=1, activation=1, try_name="/test")

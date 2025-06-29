@@ -26,12 +26,15 @@ def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998,
     # directories
     # no change
     try_name=f"{model_name}_w{w}_a{a}_{epochs}_{folding_config_file}_{tryid}"
-    try_name="/" + try_name
+    try_name="/" + try_name + '_' + pruning_type
     script_dir = os.path.dirname(os.path.abspath(__file__))
     folding_json_file = script_dir + f'/estimates_output{try_name}/auto_folding_config.json' 
     onnx_model_file = script_dir + f'/estimates_output{try_name}/intermediate_models/step_apply_folding_config.onnx'
-    unfold_json_file =  script_dir + '/fold/unfold.json'
-    log_file = script_dir + '/log.txt'
+    # unfold_json_file =  script_dir + f'/estimates_output{try_name}/unfold.json'
+    unfold_json = script_dir + f'/estimates_output{try_name}/unfold.json'
+    auto_json = script_dir + f'/estimates_output{try_name}/auto.json'
+    log_file = script_dir + f'/build{try_name}/log.txt'
+    os.makedirs(script_dir + f'/build{try_name}', exist_ok=True)
     # init log file
     def log(message):
         with open(log_file, 'a') as f:
@@ -58,27 +61,30 @@ def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998,
         log(f"Model weight {model_weight_name} does not exist, training the model")
         model = train_try(model_name = model_name, w = w, a = a, epochs = epochs, random_seed = random_seed)
     # Stage 4: prune model
-    log('Stage 4: Pruning the model')
-    model_prune_weight_name = f"./model/final_{model_name}_w{w}_a{a}_{pruning_type}_pruned.pth"
-    if os.path.exists(model_prune_weight_name):
-        log(f"Loading model weight from {model_prune_weight_name}")
-        model.load_state_dict(torch.load(model_prune_weight_name))
+    if pruning_type == 'na':
         pruned_model = copy.deepcopy(model)
     else:
-        pruned_model = auto_prune_model(model, model_name, w, a, dataset_name = dataset_name, pruning_type= pruning_type)
+        log('Stage 4: Pruning the model')
+        model_prune_weight_name = f"./model/final_{model_name}_w{w}_a{a}_{pruning_type}_pruned.pth"
+        if os.path.exists(model_prune_weight_name):
+            log(f"Loading model weight from {model_prune_weight_name}")
+            model.load_state_dict(torch.load(model_prune_weight_name))
+            pruned_model = copy.deepcopy(model)
+        else:
+            pruned_model = auto_prune_model(model, model_name, w, a, dataset_name = dataset_name, pruning_type= pruning_type)
     # Stage 5: estimate the model
     log('Stage 5: Estimating the model')
     estimate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name)
-    auto_unfold_json(folding_json_file, onnx_model_file, unfold_json_file)
+    auto_unfold_json(folding_json_file = folding_json_file, onnx_model_file = onnx_model_file, unfold_json = unfold_json, auto_json = auto_json)
     # Stage 6: generate ip
     log('Stage 6: Generating the IP')
 
     if folding_config_file == "auto":
-        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file='auto')
+        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= auto_json)
     elif folding_config_file == "unfold":
-        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file=unfold_json_file)
+        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= unfold_json)
     else:
-        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file=folding_config_file)
+        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file = folding_config_file)
     end_date_time = time.localtime()
     log(f"End time: {time.strftime('%Y-%m-%d %H:%M:%S', end_date_time)}")
     # total time consumed xxday, xxhour, xxmin, xxsec
@@ -95,12 +101,33 @@ if __name__ == "__main__":
     run_all(model_name = 'tfc',
              w = 1,
                a = 1, 
-               epochs = 100,
+               epochs = 500,
                  random_seed = 1998,
                    dataset_name = 'MNIST',
-                     pruning_type = 'l1',
-                       tryid = "test",
+                     pruning_type = 'na',
+                       tryid = "test2",
                          folding_config_file="auto")
+    
+    run_all(model_name = 'tfc',
+            w = 1,
+            a = 1, 
+            epochs = 500,
+                random_seed = 1998,
+                dataset_name = 'MNIST',
+                    pruning_type = 'ram',
+                    tryid = "test2",
+                        folding_config_file="auto")
+
+    run_all(model_name = 'tfc',
+        w = 1,
+        a = 1, 
+        epochs = 500,
+            random_seed = 1998,
+            dataset_name = 'MNIST',
+                pruning_type = 'ram',
+                tryid = "test2",
+                    folding_config_file="unfold")
+# run_all(model_name = 'tfc',
     # run_all(model_name = 'tfc',
     #         w = 1,
     #         a = 1, 

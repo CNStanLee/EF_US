@@ -266,7 +266,8 @@ class FC(Module):
                     weight_bit_width=weight_bit_width,
                     weight_quant=CommonWeightQuant))
             in_features = out_features
-            self.features.append(BatchNorm1d(num_features=in_features))
+            self.features.append(BatchNorm1d(num_features=in_features, eps=1e-4))
+          
             self.features.append(QuantIdentity(act_quant=CommonActQuant, bit_width=act_bit_width))
             self.features.append(Dropout(p=DROPOUT))
         self.features.append(
@@ -346,7 +347,7 @@ def get_model(model_name, w, a):
         net = FC(
         weight_bit_width=w,
         act_bit_width=a,
-        in_bit_width=1,
+        in_bit_width=8,
         in_channels=1,
         out_features=[64, 64, 64],
         num_classes=10)
@@ -355,7 +356,7 @@ def get_model(model_name, w, a):
         net = FC(
         weight_bit_width=w,
         act_bit_width=a,
-        in_bit_width=1,
+        in_bit_width=8,
         in_channels=1,
         out_features=[256, 256, 256],
         num_classes=10)
@@ -364,7 +365,7 @@ def get_model(model_name, w, a):
         net = FC(
         weight_bit_width=w,
         act_bit_width=a,
-        in_bit_width=1,
+        in_bit_width=8,
         in_channels=1,
         out_features=[1024, 1024, 1024],
         num_classes=10)

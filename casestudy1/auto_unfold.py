@@ -68,6 +68,31 @@ def modify_json_config(json_data, channel_info):
     
     return json_data
 
+def modify_json_config_fold(json_data, channel_info):
+
+    for layer_name, layer_config in json_data.items():
+
+        base_name = layer_name
+        if base_name in channel_info:
+            # channels = channel_info[base_name]
+            
+            # # 更新参数
+            # if "in_channels" in channels:
+            #     if "SIMD" in layer_config:
+            #         layer_config["SIMD"] = channels["in_channels"]
+            # if "out_channels" in channels:
+            #     if "PE" in layer_config:
+            #         layer_config["PE"] = channels["out_channels"]
+            # if "parallel_window" in layer_config:
+            #     # let parallel_windows = 1
+            #     layer_config["parallel_window"] = channel_info[layer_name]["parallel_window"]
+
+            # 修改内存模式
+            if "mem_mode" in layer_config:
+                layer_config["mem_mode"] = "internal_embedded"
+    
+    return json_data
+
 def main():
 
     folding_json_file = './casestudy1/estimates_output/test/auto_folding_config.json'
@@ -85,18 +110,49 @@ def main():
     
     print("unfolded.json has been created with updated parameters.")
 
-def auto_unfold_json(folding_json_file, onnx_model_file, target_json_file="unfolded.json"):
+def auto_unfold_json(folding_json_file, onnx_model_file, unfold_json = "unfolded.json", auto_json = "auto.json"):
     """自动展开JSON配置文件"""
-    with open(folding_json_file) as f:
-        json_data = json.load(f)
+    # with open(folding_json_file) as f:
+    #     json_data = json.load(f)
+    # onnx_model = onnx.load(onnx_model_file)
+    # channel_info = get_layer_channels(onnx_model)
+    # unfold_json = modify_json_config(json_data, channel_info)
+    # auto_json = modify_json_config_fold(json_data, channel_info)
+    # with open(unfold_json, "w") as f:
+    #     json.dump(unfold_json, f, indent=2)
+    
+    # print(f"{unfold_json} has been created with updated parameters.")
+
+
+    # with open(auto_json, "w") as f:
+    #     json.dump(auto_json, f, indent=2)
+    
+    # print(f"{auto_json} has been created with updated parameters.")
+
     onnx_model = onnx.load(onnx_model_file)
     channel_info = get_layer_channels(onnx_model)
-    modified_json = modify_json_config(json_data, channel_info)
+
+    with open(folding_json_file) as f:
+        json_data = json.load(f)
+
+    unfold_json_data = modify_json_config(json_data, channel_info)
+
+    with open(unfold_json, "w") as f:
+        json.dump(unfold_json_data, f, indent=2)
     
-    with open(target_json_file, "w") as f:
-        json.dump(modified_json, f, indent=2)
+    print(f"{unfold_json} has been created with updated parameters.")
+    ## 
+    with open(folding_json_file) as f:
+        json_data = json.load(f)
+
+    auto_json_data = modify_json_config_fold(json_data, channel_info)
+
+    with open(auto_json, "w") as f:
+        json.dump(auto_json_data, f, indent=2)
     
-    print(f"{target_json_file} has been created with updated parameters.")
+    print(f"{auto_json} has been created with updated parameters.")
+
+
 
 
 if __name__ == "__main__":

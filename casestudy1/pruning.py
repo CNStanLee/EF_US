@@ -35,7 +35,8 @@ from build_ram import build_ram, draw_bipartite_adjacency_graph
 import json
 import csv
 from collections import namedtuple
-
+PruningDecision = namedtuple('PruningDecision', ['layer_path', 'pruning_rate'])
+PruningResult = namedtuple('PruningResult', ['layer_path', 'layer_type', 'param_count','pruning_percentage', 'test_accuracy', 'accuray_drop'])
 # 保存结果到CSV
 def save_to_csv(results, filename):
     with open(filename, 'w', newline='') as f:
@@ -49,7 +50,7 @@ def save_to_csv(results, filename):
 
 # 从CSV读取结果
 def load_from_csv(filename):
-    PruningResult = namedtuple('PruningResult', ['layer_path', 'param_count','pruning_percentage', 'test_accuracy', 'accuray_drop'])
+
     results = []
     with open(filename, 'r') as f:
         reader = csv.reader(f)
@@ -57,12 +58,13 @@ def load_from_csv(filename):
         for row in reader:
             # 转换数据类型
             layer_path = row[0]
-            param_count = float(row[1])  # 添加参数计数
-            pruning_percentage = float(row[2])
-            test_accuracy = float(row[3])
-            accuray_drop = float(row[4])
+            layer_type = row[1]
+            param_count = float(row[2])  # 添加参数计数
+            pruning_percentage = float(row[3])
+            test_accuracy = float(row[4])
+            accuray_drop = float(row[5])
             results.append(PruningResult(
-                layer_path, param_count, pruning_percentage, test_accuracy, accuray_drop
+                layer_path, layer_type, param_count, pruning_percentage, test_accuracy, accuray_drop
             ))
     return results
 
@@ -234,30 +236,34 @@ def layer_pruning(model, param_path, pruning_percentage=0.5, pruning_type='l1'):
 
 def sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', step = 20):
     # 定义命名元组类型
-    PruningResult = namedtuple('PruningResult', ['layer_path', 'param_count','pruning_percentage', 'test_accuracy', 'accuray_drop'])
+
     
     original_acc = test(model, test_loader, device)
     results = []
     for param in sparsity_info:
         layer_path = param.path
+        layer_type = param.layer_type
         param_count = param.param_count
-        for percentage in range(0, 100, step):
-            percentage /= 100.0
-            # Apply pruning
-            pruned_model = layer_pruning(model, layer_path, pruning_percentage=percentage, pruning_type=pruning_type)
-            test_acc = test(pruned_model, test_loader, device)
+        # check if layer_type is QuantLinear or QuantConv2d
+        if layer_type in ['QuantLinear', 'QuantConv2d']:
+            for percentage in range(0, 100, step):
+                percentage /= 100.0
+                # Apply pruning
+                pruned_model = layer_pruning(model, layer_path, pruning_percentage=percentage, pruning_type=pruning_type)
+                test_acc = test(pruned_model, test_loader, device)
+                
+                # 创建命名元组并添加到结果列表
+                result = PruningResult(
+                    layer_path=layer_path,
+                    layer_type=layer_type,
+                    param_count=param_count,
+                    pruning_percentage=percentage,
+                    test_accuracy=test_acc,
+                    accuray_drop= original_acc - test_acc
+                )
+                results.append(result)
             
-            # 创建命名元组并添加到结果列表
-            result = PruningResult(
-                layer_path=layer_path,
-                param_count=param_count,
-                pruning_percentage=percentage,
-                test_accuracy=test_acc,
-                accuray_drop= original_acc - test_acc
-            )
-            results.append(result)
-            
-            print(f"Layer {layer_path} Pruning {percentage*100:.0f}% - Test Accuracy: {test_acc:.2f}%, Accuracy Drop: {result.accuray_drop:.2f}%")
+            print(f"Layer {layer_path}, Layer type {layer_type} Pruning {percentage*100:.0f}% - Test Accuracy: {test_acc:.2f}%, Accuracy Drop: {result.accuray_drop:.2f}%")
     return results
 
 
@@ -275,7 +281,7 @@ def determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance=0.
     PruningDecision命名元组列表，包含每层路径和安全剪枝率
     """
     # 定义结果命名元组
-    PruningDecision = namedtuple('PruningDecision', ['layer_path', 'pruning_rate'])
+    
     
     # 按层路径分组结果
     layer_results = {}
@@ -299,7 +305,9 @@ def determine_safe_pruning_rates(sensitivity_results, accuracy_drop_tolerance=0.
                 break  # 找到第一个满足条件的即停止
 
         # when layer parameter count is too small, skip pruning
-        if results[0].param_count < threshold:
+        # if results[0].param_count < threshold:
+        #     safe_rate = 0.0
+        if results[0].layer_type not in ['QuantLinear', 'QuantConv2d']:
             safe_rate = 0.0
         
         decisions.append(PruningDecision(layer_path, safe_rate))
@@ -551,45 +559,48 @@ def auto_ram_pruning(model ,show_graph = False, model_name= '2c3f', w = 4, a = 4
         if hasattr(module, 'weight') and isinstance(module.weight, torch.Tensor):
             print(f"Layer: {name}")
             print(f"Weight shape: {module.weight.shape}")
-            if module.weight.dim() == 2 or module.weight.dim() == 4:
-                print("This is a 2D or 4D weight tensor.")
-                graph_shape = module.weight.shape
+            # check if it is quant linear or quant conv2d
+            if isinstance(module, (QuantLinear, QuantConv2d)):
+                print(f"Layer type: {module.__class__.__name__}")
+                if module.weight.dim() == 2 or module.weight.dim() == 4:
+                    print("This is a 2D or 4D weight tensor.")
+                    graph_shape = module.weight.shape
 
-                safe_name = name.replace('.', '_')
-                mask_file = os.path.join(mask_dir, f"mask_{model_name}_{safe_name}.npy")
+                    safe_name = name.replace('.', '_')
+                    mask_file = os.path.join(mask_dir, f"mask_{model_name}_{safe_name}.npy")
 
-                if not os.path.exists(mask_file):
-                    print(f"Mask file {mask_file} does not exist, building the mask.")
-                    mask = build_ram(graph_shape)  
-                    np.save(mask_file, mask.cpu().numpy() if isinstance(mask, torch.Tensor) else mask)
+                    if not os.path.exists(mask_file):
+                        print(f"Mask file {mask_file} does not exist, building the mask.")
+                        mask = build_ram(graph_shape)  
+                        np.save(mask_file, mask.cpu().numpy() if isinstance(mask, torch.Tensor) else mask)
+                    else:
+                        print(f"Mask file {mask_file} exists, loading the mask.")
+                        mask = torch.tensor(np.load(mask_file)) 
+
+                    # if input channel and output channel both < 100 draw the bipartite adjacency graph
+                    if show_graph:
+                        if graph_shape[0] < 100 and graph_shape[1] < 100:
+                            print("Drawing the bipartite adjacency graph.")
+                            draw_bipartite_adjacency_graph(mask)
+                    print(mask)
+
+                    print("-" * 50)
+                    print(f"Weight shape: {module.weight.shape}")
+                    print(module.weight.data)
+                    # use the mask to prune the weight tensor
+                    # get the type of the weight data
+                    weight_type = module.weight.data.dtype
+                    module.weight.data = module.weight.data * mask
+                    # convert the weight data to the same type as before
+                    module.weight.data = module.weight.data.to(weight_type)
+                    print("-" * 50)
+                    print(f"Pruned weight shape: {module.weight.shape}")
+                    # print the weight pruned tensor
+                    print(module.weight.data)
                 else:
-                    print(f"Mask file {mask_file} exists, loading the mask.")
-                    mask = torch.tensor(np.load(mask_file)) 
-
-                # if input channel and output channel both < 100 draw the bipartite adjacency graph
-                if show_graph:
-                    if graph_shape[0] < 100 and graph_shape[1] < 100:
-                        print("Drawing the bipartite adjacency graph.")
-                        draw_bipartite_adjacency_graph(mask)
-                print(mask)
-
+                    print("This is an unsupported weight tensor dimension.")
+                # print(module.weight.data)
                 print("-" * 50)
-                print(f"Weight shape: {module.weight.shape}")
-                print(module.weight.data)
-                # use the mask to prune the weight tensor
-                # get the type of the weight data
-                weight_type = module.weight.data.dtype
-                module.weight.data = module.weight.data * mask
-                # convert the weight data to the same type as before
-                module.weight.data = module.weight.data.to(weight_type)
-                print("-" * 50)
-                print(f"Pruned weight shape: {module.weight.shape}")
-                # print the weight pruned tensor
-                print(module.weight.data)
-            else:
-                print("This is an unsupported weight tensor dimension.")
-            # print(module.weight.data)
-            print("-" * 50)
 
     print("Finished processing all layers.")
     analyze_model_sparsity(model)
@@ -609,12 +620,12 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
 
 def auto_prune_model_sensitivity(ori_model, model_name, w, a, dataset_name='MNIST', pruning_type='l1'):
 
-    accuracy_drop_tolerance = 30  # 40% layer accuracy drop tolerance
+    accuracy_drop_tolerance = 5  # 40% layer accuracy drop tolerance
     final_accuracy_drop_tolerance = 10  # 1% final accuracy drop tolerance
     retrain_epochs = 10  # number of epochs to retrain the model after pruning
-    final_retrain_epochs = 100  # number of epochs to retrain the final model after pruning
-    sensitivity_step = 1    # step size for sensitivity analysis, 1% for each step
-    tolerance_step = 1  # step size for increasing accuracy drop tolerance
+    final_retrain_epochs = 50  # number of epochs to retrain the final model after pruning
+    sensitivity_step = 10    # step size for sensitivity analysis, 1% for each step
+    tolerance_step = 5  # step size for increasing accuracy drop tolerance
     # load the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

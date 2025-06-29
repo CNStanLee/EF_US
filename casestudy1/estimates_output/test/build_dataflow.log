@@ -1,3 +1,14 @@
-[2025-06-29 08:27:31,285] Running step: step_qonnx_to_finn [1/10]
-[2025-06-29 08:27:31,285] Running step: step_tidy_up [2/10]
-[2025-06-29 08:27:31,310] Running step: step_streamline [3/10]
+[2025-06-29 16:20:48,412] Running step: step_qonnx_to_finn [1/10]
+[2025-06-29 16:20:48,469] Running step: step_tidy_up [2/10]
+[2025-06-29 16:20:48,487] Running step: step_streamline [3/10]
+[2025-06-29 16:20:49,081] /usr/local/lib/python3.10/dist-packages/qonnx/transformation/infer_data_layouts.py:127: UserWarning: Assuming 4D input is NCHW
+[2025-06-29 16:20:49,081]   warnings.warn("Assuming 4D input is NCHW")
+[2025-06-29 16:20:49,083] Running step: step_convert_to_hw [4/10]
+[2025-06-29 16:20:49,092] Running step: step_create_dataflow_partition [5/10]
+[2025-06-29 16:20:49,095] Running step: step_specialize_layers [6/10]
+[2025-06-29 16:20:49,097] Running step: step_target_fps_parallelization [7/10]
+[2025-06-29 16:20:49,103] /home/changhong/prj/finn/src/finn/transformation/fpgadataflow/set_folding.py:233: UserWarning: Node MVAU_hls_0 is bottleneck with 32 cycles, running second pass
+[2025-06-29 16:20:49,103]   warnings.warn(
+[2025-06-29 16:20:49,108] Running step: step_apply_folding_config [8/10]
+[2025-06-29 16:20:49,108] Running step: step_minimize_bit_width [9/10]
+[2025-06-29 16:20:49,116] Running step: step_generate_estimate_reports [10/10]
