@@ -11,16 +11,16 @@ import os
 from torch.utils.data import DataLoader
 import torch
 import onnx
-from finn.util.test import get_test_model_trained
+# from finn.util.test import get_test_model_trained
 from brevitas.export import export_qonnx
-from qonnx.util.cleanup import cleanup as qonnx_cleanup
-from qonnx.core.modelwrapper import ModelWrapper
-from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
-from qonnx.transformation.infer_shapes import InferShapes
-from qonnx.transformation.fold_constants import FoldConstants
-from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
-from finn.util.basic import make_build_dir
-from finn.util.visualization import showInNetron
+# from qonnx.util.cleanup import cleanup as qonnx_cleanup
+# from qonnx.core.modelwrapper import ModelWrapper
+# from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
+# from qonnx.transformation.infer_shapes import InferShapes
+# from qonnx.transformation.fold_constants import FoldConstants
+# from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
+# from finn.util.basic import make_build_dir
+# from finn.util.visualization import showInNetron
 import os
 
 

@@ -59,16 +59,16 @@ def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998,
         model = train_try(model_name = model_name, w = w, a = a, epochs = epochs, random_seed = random_seed)
     # Stage 4: prune model
     log('Stage 4: Pruning the model')
-    model_prune_weight_name = f"./model/final_{model_name}_w{w}_a{a}_pruned.pth"
+    model_prune_weight_name = f"./model/final_{model_name}_w{w}_a{a}_{pruning_type}_pruned.pth"
     if os.path.exists(model_prune_weight_name):
         log(f"Loading model weight from {model_prune_weight_name}")
-        model.load_state_dict(torch.load(model_weight_name))
+        model.load_state_dict(torch.load(model_prune_weight_name))
         pruned_model = copy.deepcopy(model)
     else:
         pruned_model = auto_prune_model(model, model_name, w, a, dataset_name = dataset_name, pruning_type= pruning_type)
     # Stage 5: estimate the model
     log('Stage 5: Estimating the model')
-    estimate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file=folding_config_file)
+    estimate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name)
     auto_unfold_json(folding_json_file, onnx_model_file, unfold_json_file)
     # Stage 6: generate ip
     log('Stage 6: Generating the IP')
@@ -92,12 +92,31 @@ def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998,
     log(f"Total time consumed: {days} days, {hours} hours, {minutes} minutes, {seconds} seconds")
     log('All stages completed successfully!')
 if __name__ == "__main__":
-    run_all(model_name = '2c3f',
-             w = 4,
-               a = 4, 
-               epochs = 500,
+    run_all(model_name = 'tfc',
+             w = 1,
+               a = 1, 
+               epochs = 100,
                  random_seed = 1998,
                    dataset_name = 'MNIST',
                      pruning_type = 'l1',
                        tryid = "test",
-                         folding_config_file="unfold")
+                         folding_config_file="auto")
+    # run_all(model_name = 'tfc',
+    #         w = 1,
+    #         a = 1, 
+    #         epochs = 100,
+    #             random_seed = 1998,
+    #             dataset_name = 'MNIST',
+    #                 pruning_type = 'ram',
+    #                 tryid = "test",
+    #                     folding_config_file="auto")
+    
+    # run_all(model_name = 'tfc',
+    #     w = 1,
+    #     a = 1, 
+    #     epochs = 100,
+    #         random_seed = 1998,
+    #         dataset_name = 'MNIST',
+    #             pruning_type = 'ram',
+    #             tryid = "test",
+    #                 folding_config_file="unfold")

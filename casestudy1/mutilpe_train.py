@@ -11,16 +11,16 @@ import os
 from torch.utils.data import DataLoader
 import torch
 import onnx
-from finn.util.test import get_test_model_trained
+# from finn.util.test import get_test_model_trained
 from brevitas.export import export_qonnx
-from qonnx.util.cleanup import cleanup as qonnx_cleanup
-from qonnx.core.modelwrapper import ModelWrapper
-from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
-from qonnx.transformation.infer_shapes import InferShapes
-from qonnx.transformation.fold_constants import FoldConstants
-from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
-from finn.util.basic import make_build_dir
-from finn.util.visualization import showInNetron
+# from qonnx.util.cleanup import cleanup as qonnx_cleanup
+# from qonnx.core.modelwrapper import ModelWrapper
+# from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
+# from qonnx.transformation.infer_shapes import InferShapes
+# from qonnx.transformation.fold_constants import FoldConstants
+# from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
+# from finn.util.basic import make_build_dir
+# from finn.util.visualization import showInNetron
 import os
 
 from models import get_model
@@ -32,12 +32,14 @@ def main():
 
     # w_set = [1, 2, 4, 8]
     # a_set = [1, 2, 4, 8]
-    w_set = [1,2,4,8]
-    a_set = [2,4,8]
+    # w_set = [1,2,4,8]
+    # a_set = [2,4,8]
+    w_set = [1]
+    a_set = [1]
     # model_names = ['2c3f', 'tfc', 'sfc', 'lfc']
     # model_names = ['tfc', 'sfc', 'lfc']
-    model_names = ['2c3f_relu']
-    epochs = 500
+    model_names = ['tfc']
+    epochs = 100
     for model_name in model_names:
         print(f"Training model {model_name} with different weight and activation bit widths")
         # Iterate through all combinations of weight and activation bit widths

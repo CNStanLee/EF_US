@@ -10,26 +10,27 @@ from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
 import onnx
-from finn.util.test import get_test_model_trained
-from brevitas.export import export_qonnx
-from qonnx.util.cleanup import cleanup as qonnx_cleanup
-from qonnx.core.modelwrapper import ModelWrapper
-from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
-from qonnx.transformation.infer_shapes import InferShapes
-from qonnx.transformation.fold_constants import FoldConstants
-from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
-from finn.util.basic import make_build_dir
-from finn.util.visualization import showInNetron
+# from finn.util.test import get_test_model_trained
+# from brevitas.export import export_qonnx
+# from qonnx.util.cleanup import cleanup as qonnx_cleanup
+# from qonnx.core.modelwrapper import ModelWrapper
+# from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
+# from qonnx.transformation.infer_shapes import InferShapes
+# from qonnx.transformation.fold_constants import FoldConstants
+# from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
+# from finn.util.basic import make_build_dir
+# from finn.util.visualization import showInNetron
 from dataclasses import dataclass
 import copy
 import torch.nn.utils.prune as prune
-
+import numpy as np
 from collections import namedtuple, defaultdict
 
 
 from dataset import get_dataloaders
 from models import get_model
 from train import train, test, validate
+from build_ram import build_ram, draw_bipartite_adjacency_graph
 
 import json
 import csv
@@ -378,6 +379,7 @@ def retrain_model(model, train_loader, val_loader, epochs=20):
 # l2
 # random
 # magnitude
+# Ram
 # SNIP
 
 def main():
@@ -542,7 +544,70 @@ def test_pruned_model():
     print(f"Test Accuracy of the pruned model: {test_acc:.2f}%")
     analyze_model_sparsity(retrained_model)
 
+def auto_ram_pruning(model ,show_graph = False, model_name= '2c3f', w = 4, a = 4, pruning_type = 'ram'):
+    mask_dir = './mask_tmp'
+    os.makedirs(mask_dir, exist_ok=True)  
+    for name, module in model.named_modules():
+        if hasattr(module, 'weight') and isinstance(module.weight, torch.Tensor):
+            print(f"Layer: {name}")
+            print(f"Weight shape: {module.weight.shape}")
+            if module.weight.dim() == 2 or module.weight.dim() == 4:
+                print("This is a 2D or 4D weight tensor.")
+                graph_shape = module.weight.shape
+
+                safe_name = name.replace('.', '_')
+                mask_file = os.path.join(mask_dir, f"mask_{model_name}_{safe_name}.npy")
+
+                if not os.path.exists(mask_file):
+                    print(f"Mask file {mask_file} does not exist, building the mask.")
+                    mask = build_ram(graph_shape)  
+                    np.save(mask_file, mask.cpu().numpy() if isinstance(mask, torch.Tensor) else mask)
+                else:
+                    print(f"Mask file {mask_file} exists, loading the mask.")
+                    mask = torch.tensor(np.load(mask_file)) 
+
+                # if input channel and output channel both < 100 draw the bipartite adjacency graph
+                if show_graph:
+                    if graph_shape[0] < 100 and graph_shape[1] < 100:
+                        print("Drawing the bipartite adjacency graph.")
+                        draw_bipartite_adjacency_graph(mask)
+                print(mask)
+
+                print("-" * 50)
+                print(f"Weight shape: {module.weight.shape}")
+                print(module.weight.data)
+                # use the mask to prune the weight tensor
+                # get the type of the weight data
+                weight_type = module.weight.data.dtype
+                module.weight.data = module.weight.data * mask
+                # convert the weight data to the same type as before
+                module.weight.data = module.weight.data.to(weight_type)
+                print("-" * 50)
+                print(f"Pruned weight shape: {module.weight.shape}")
+                # print the weight pruned tensor
+                print(module.weight.data)
+            else:
+                print("This is an unsupported weight tensor dimension.")
+            # print(module.weight.data)
+            print("-" * 50)
+
+    print("Finished processing all layers.")
+    analyze_model_sparsity(model)
+    model_save_path = f"./model/final_{model_name}_w{w}_a{a}_{pruning_type}_pruned.pth"
+    torch.save(model.state_dict(), model_save_path)
+    print(f"Model saved to {model_save_path}")
+    return model
+
 def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_type='l1'):
+    if pruning_type == 'ram':
+        print('ram pruning')
+        model = auto_ram_pruning(model = ori_model, show_graph = False, model_name = model_name, w = w, a = a, pruning_type = pruning_type)
+    else:
+        print('pruning with sens')
+        model = auto_prune_model_sensitivity(ori_model = ori_model, model_name = model_name, w = w, a = a, dataset_name=dataset_name, pruning_type = pruning_type)
+    return model
+
+def auto_prune_model_sensitivity(ori_model, model_name, w, a, dataset_name='MNIST', pruning_type='l1'):
 
     accuracy_drop_tolerance = 30  # 40% layer accuracy drop tolerance
     final_accuracy_drop_tolerance = 10  # 1% final accuracy drop tolerance
@@ -556,7 +621,7 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
     # load the model
     # ori_model = get_model(model_name, w, a)
     # ori_model.load_state_dict(torch.load(model_weight))
-    ori_model.to(device)
+    ori_model.to(device) 
 
     sparsity_info = analyze_model_sparsity(ori_model)
 
@@ -642,7 +707,7 @@ def auto_prune_model(ori_model, model_name, w, a, dataset_name='MNIST', pruning_
     print(f"Compression Ratio: {compression_ratio:.2f}x")
     print("\nPruning Stage 6: Exporting the Final Model")
     # save model to pth
-    model_save_path = f"./model/final_{model_name}_w{w}_a{a}_pruned.pth"
+    model_save_path = f"./model/final_{model_name}_w{w}_a{a}_{pruning_type}_pruned.pth"
     torch.save(final_model2.state_dict(), model_save_path)
     print(f"Model saved to {model_save_path}")
     return final_model2

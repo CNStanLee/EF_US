@@ -1,0 +1,13 @@
+Training tfc with weight bit width 1 and activation bit width 1 for 10 epochs.
+Epoch [1/10], LR: 0.010000, Train Loss: 1.8848, Train Acc: 34.31%, Val Loss: 1.3489, Val Acc: 54.89%
+Epoch [2/10], LR: 0.010000, Train Loss: 1.4484, Train Acc: 50.39%, Val Loss: 1.1836, Val Acc: 60.44%
+Epoch [3/10], LR: 0.001000, Train Loss: 1.3595, Train Acc: 53.85%, Val Loss: 1.1543, Val Acc: 61.13%
+Epoch [4/10], LR: 0.001000, Train Loss: 1.3474, Train Acc: 54.62%, Val Loss: 1.1294, Val Acc: 62.22%
+Epoch [5/10], LR: 0.000100, Train Loss: 1.3361, Train Acc: 54.91%, Val Loss: 1.1133, Val Acc: 62.64%
+Epoch [6/10], LR: 0.000100, Train Loss: 1.3449, Train Acc: 54.54%, Val Loss: 1.1407, Val Acc: 62.09%
+Epoch [7/10], LR: 0.000010, Train Loss: 1.3369, Train Acc: 54.92%, Val Loss: 1.1194, Val Acc: 62.88%
+Epoch [8/10], LR: 0.000010, Train Loss: 1.3371, Train Acc: 54.84%, Val Loss: 1.1162, Val Acc: 62.48%
+Epoch [9/10], LR: 0.000001, Train Loss: 1.3348, Train Acc: 54.87%, Val Loss: 1.1385, Val Acc: 62.21%
+Epoch [10/10], LR: 0.000001, Train Loss: 1.3342, Train Acc: 54.94%, Val Loss: 1.1149, Val Acc: 63.12%
+Test Accuracy of the best model on the test images: 63.55%
+Model saved to ./model/tfc_w1_a1_10.pth

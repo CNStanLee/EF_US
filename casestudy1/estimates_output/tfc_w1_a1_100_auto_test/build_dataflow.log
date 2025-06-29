@@ -1,0 +1,3 @@
+[2025-06-29 08:17:59,577] Running step: step_qonnx_to_finn [1/10]
+[2025-06-29 08:17:59,577] Running step: step_tidy_up [2/10]
+[2025-06-29 08:17:59,599] Running step: step_streamline [3/10]
