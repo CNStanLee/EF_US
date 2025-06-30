@@ -23,3 +23,15 @@ Epoch [9/10], LR: 0.000001, Train Loss: 1.3139, Train Acc: 55.79%, Val Loss: 1.1
 Epoch [10/10], LR: 0.000001, Train Loss: 1.3160, Train Acc: 55.87%, Val Loss: 1.0985, Val Acc: 63.51%
 Test Accuracy of the best model on the test images: 64.15%
 Model saved to ./model/tfc_w1_a1_10.pth
+Epoch [1/10], LR: 0.010000, Train Loss: 1.8560, Train Acc: 35.57%, Val Loss: 1.3208, Val Acc: 56.39%
+Epoch [2/10], LR: 0.010000, Train Loss: 1.4137, Train Acc: 51.77%, Val Loss: 1.1605, Val Acc: 61.65%
+Epoch [3/10], LR: 0.001000, Train Loss: 1.3347, Train Acc: 54.99%, Val Loss: 1.1150, Val Acc: 62.89%
+Epoch [4/10], LR: 0.001000, Train Loss: 1.3255, Train Acc: 55.28%, Val Loss: 1.0724, Val Acc: 64.32%
+Epoch [5/10], LR: 0.000100, Train Loss: 1.3051, Train Acc: 56.20%, Val Loss: 1.0885, Val Acc: 63.60%
+Epoch [6/10], LR: 0.000100, Train Loss: 1.3110, Train Acc: 55.76%, Val Loss: 1.0870, Val Acc: 64.28%
+Epoch [7/10], LR: 0.000010, Train Loss: 1.3043, Train Acc: 56.04%, Val Loss: 1.0783, Val Acc: 64.42%
+Epoch [8/10], LR: 0.000010, Train Loss: 1.3096, Train Acc: 56.09%, Val Loss: 1.0779, Val Acc: 64.61%
+Epoch [9/10], LR: 0.000001, Train Loss: 1.2991, Train Acc: 56.52%, Val Loss: 1.0935, Val Acc: 64.30%
+Epoch [10/10], LR: 0.000001, Train Loss: 1.3059, Train Acc: 55.84%, Val Loss: 1.0745, Val Acc: 65.33%
+Test Accuracy of the best model on the test images: 65.85%
+Model saved to ./model/tfc_w1_a1_10.pth

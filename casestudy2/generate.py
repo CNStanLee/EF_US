@@ -44,7 +44,7 @@ from train import train_try
 
 # ----- USER PARAS ------ #
 
-def estimate_ip(model_name, model, weight, activation, try_name= "/model_generation_test", folding_config_file = "auto"):
+def generate_ip(model_name, model, weight, activation, try_name= "/model_generation_test", folding_config_file = "auto"):
     # model_name = "2c3f_relu"
     # model_weight = "./model/final_2c3f_relu_w4_a4_pruned.pth"
     # epochs = 50
@@ -137,36 +137,53 @@ def estimate_ip(model_name, model, weight, activation, try_name= "/model_generat
     qonnx_cleanup(ready_model_filename, out_file=ready_model_filename)
     print("Ready Model saved to %s" % ready_model_filename)
 
-    if os.path.exists(estimates_output_dir):
-        shutil.rmtree(estimates_output_dir)
-        print("Previous run results deleted!")
+    # if os.path.exists(estimates_output_dir):
+    #     shutil.rmtree(estimates_output_dir)
+    #     print("Previous run results deleted!")
 
     if os.path.exists(rtlsim_output_dir):
         shutil.rmtree(rtlsim_output_dir)
         print("Previous run results deleted!")
 
+    # if os.path.exists(tmp_path):
+    #     shutil.rmtree(tmp_path)
+    #     print("Previous run results deleted!")
 
-    cfg_estimates = build.DataflowBuildConfig(
-        output_dir          = estimates_output_dir,
-        target_fps          = 100000000,
-        synth_clk_period_ns = 10.0,
-        fpga_part           = pynq_part_map["U50"],
-        steps               = build_cfg.estimate_only_dataflow_steps,
-        generate_outputs=[
-            build_cfg.DataflowOutputType.ESTIMATE_REPORTS,
-        ]
-    )
+    if folding_config_file == "auto":
+        cfg_stitched_ip = build.DataflowBuildConfig(
+            output_dir          = rtlsim_output_dir,
+            mvau_wwidth_max     = 10000,
+            target_fps          = 1000000,
+            synth_clk_period_ns = 10.0,    
+            fpga_part           = pynq_part_map["U50"],
+            # folding_config_file = folding_config_file,
+            generate_outputs=[
+                build_cfg.DataflowOutputType.STITCHED_IP,
+                build_cfg.DataflowOutputType.RTLSIM_PERFORMANCE,
+                build_cfg.DataflowOutputType.OOC_SYNTH,
+            ]
+        )
+    else:
+        cfg_stitched_ip = build.DataflowBuildConfig(
+            output_dir          = rtlsim_output_dir,
+            mvau_wwidth_max     = 10000,
+            target_fps          = 1000000,
+            synth_clk_period_ns = 10.0,    
+            fpga_part           = pynq_part_map["U50"],
+            folding_config_file = folding_config_file,
+            generate_outputs=[
+                build_cfg.DataflowOutputType.STITCHED_IP,
+                build_cfg.DataflowOutputType.RTLSIM_PERFORMANCE,
+                build_cfg.DataflowOutputType.OOC_SYNTH,
+            ]
+        )
 
-    build.build_dataflow_cfg(ready_model_filename, cfg_estimates)
+    build.build_dataflow_cfg(ready_model_filename, cfg_stitched_ip)
 
 if __name__ == "__main__":
-    model_name = 'tfc'
-    weight = 1 
-    activation = 1
-    epochs = 10
+    model_name = '2c3f_relu'
+    weight = 4 
+    activation = 4
+    epochs = 500
     model = train_try(model_name=model_name, w=weight, a=activation, epochs=epochs, random_seed=1998)
-    model = get_model(model_name, weight, activation)
-    model.load_state_dict(torch.load(f"./model/best_{model_name}_w{weight}_a{activation}_{epochs}.pth"))
-    #model.load_state_dict(torch.load(f"./model/final_{model_name}_w{weight}_a{activation}_l1_pruned.pth"))
-    #model.to(torch.device("cpu"))  # Ensure
-    estimate_ip(model_name=model_name, model = model, weight=1, activation=1, try_name="/test")
+    generate_ip(model_name='2c3f_relu', model = model, weight=4, activation=4, try_name="/test")
