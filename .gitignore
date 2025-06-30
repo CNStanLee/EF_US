@@ -4,9 +4,12 @@
 # 取消忽略所有文件夹（以便递归地匹配 .py 和 .log 文件）
 !*/
 
-# 允许追踪特定文件类型
+# 不追踪 vivado.log
+vivado.log
+build_dataflow.log
+# 允许追踪其他 .py 和 .log 文件
 !*.py
 !*.log
 
-# 允许追踪 .gitignore
+# 允许追踪 .gitignore 文件
 !.gitignore
