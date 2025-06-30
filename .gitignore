@@ -1,15 +1,16 @@
 # 忽略所有文件和文件夹
 *
 
-# 取消忽略所有文件夹（以便递归地匹配 .py 和 .log 文件）
+# 允许 Git 遍历文件夹
 !*/
 
-# 不追踪 vivado.log
-vivado.log
-build_dataflow.log
-# 允许追踪其他 .py 和 .log 文件
+# 允许追踪 .py 和 .log 文件
 !*.py
 !*.log
 
-# 允许追踪 .gitignore 文件
+# 例外：明确忽略某些特定 .log 文件
+**/vivado.log
+**/build_dataflow.log
+
+# 保留 .gitignore 自身
 !.gitignore
