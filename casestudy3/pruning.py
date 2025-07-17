@@ -222,3 +222,33 @@ def fuse_pruning(model):
 #             # 冻结零权重：将零权重位置的requires_grad设置为False
 #             param.requires_grad = mask
 #             print(f"冻结 {name} 中的零权重 ({torch.sum(~mask).item()} 个权重被冻结)")
+def extract_quantized_weight_sparsity(param_details):
+    """
+    从模型稀疏度分析结果中提取量化线性层/卷积层的权重稀疏度
+    
+    Args:
+        param_details: analyze_model_sparsity()函数的返回值
+        
+    Returns:
+        sparsity_list: 量化层权重参数的稀疏度列表（按原始顺序）
+    """
+    sparsity_list = []
+    
+    # 筛选条件：权重参数 + 量化层类型
+    for param_info in param_details:
+        # 检查是否为权重参数（排除bias等）
+        if not param_info.path.endswith(".weight"):
+            continue
+            
+        # 检查是否为量化层类型
+        layer_type = param_info.layer_type
+        if layer_type in ["QuantLinear", "QuantConv2d"]:
+            sparsity_list.append(param_info.sparsity)
+    
+    # 打印结果
+    print("\nQuantized Weight Sparsities:")
+    for i, sparsity in enumerate(sparsity_list):
+        print(f"Layer {i}: {sparsity:.2f}%")
+    
+    print(f"\nTotal quantized weight layers: {len(sparsity_list)}")
+    return sparsity_list

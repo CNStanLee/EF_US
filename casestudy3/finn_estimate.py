@@ -133,6 +133,13 @@ def estimate_ip(model_name, model, weight, activation, try_name= "model_generati
     scale = 1.0
     input_t = torch.from_numpy(input_a * scale)
     #Move to CPU before export
+
+    if model_name == 'unsw_fc':
+        # For unsw_fc, we need to modify the input shape to match the model
+            # add input quantization layer to avoid first layer weight cant be implemented
+        pre_layer = qnn.QuantIdentity(bit_width=activation)
+        model = torch.nn.Sequential(pre_layer, model)
+
     model.cpu()
     # Export to ONNX
     export_qonnx(

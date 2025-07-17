@@ -4,9 +4,9 @@ from models import get_model
 from trainer import Trainer
 import yaml
 import torch
-from pruning import analyze_model_sparsity, fuse_pruning, global_magnitude_prune_with_min, freeze_zero_weights
+from pruning import analyze_model_sparsity, fuse_pruning, global_magnitude_prune_with_min, freeze_zero_weights, extract_quantized_weight_sparsity
 from finn_estimate import estimate_ip
-from bn_estimator import resource_analysis, cycle_analysis, get_layer_channels, get_onnx_model, modify_mvau_parallelization, unfold_node, get_node_names
+from bn_estimator import solve_bottle_neck, resource_analysis, cycle_analysis, get_layer_channels, get_onnx_model, modify_mvau_parallelization, unfold_node, get_node_names
 import onnx
 import brevitas.nn as qnn
 def main():
@@ -122,14 +122,13 @@ def main():
     retrained_model = retrainer.train_model()
     test_acc = retrainer.test_model(retrained_model)
     print(f"测试准确率: {test_acc:.2f}%")
-    analyze_model_sparsity(retrained_model)
-
+    param_details = analyze_model_sparsity(retrained_model)
+    sparsity_info = extract_quantized_weight_sparsity(param_details)
+    print(sparsity_info)
     # Step 3: Evaluate the resoucrce consumption and bottle neck to make prune decisions
     logger.log(divider)
     logger.log("Step 3: Evaluate the resource consumption and bottle neck to make prune decisions...")
 
-    pre_layer = qnn.QuantIdentity(bit_width=a)
-    retrained_model = torch.nn.Sequential(pre_layer, retrained_model)
 
     estimate_ip(model_name = model_name,
                  model = retrained_model,
@@ -139,34 +138,41 @@ def main():
 
 
     model_path = f"./estimates_output/{model_name}_{w}_{a}_{try_id}/intermediate_models/step_generate_estimate_reports.onnx"
-    model = get_onnx_model(model_path)
-    onnx_model = onnx.load(model_path)
-    channel_info = get_layer_channels(onnx_model)
 
 
-    print(divider)
-    print('Analyzing auto fold model')
-    print(divider)
-    auto_cycle_result = cycle_analysis(model)
-    auto_res_result = resource_analysis(model, fpgapart = "xcu50-fsvh2104-2L-e")
-    print("\n\n")
-    node_names = get_node_names(model)
-    for node_name in node_names:
-        modify_mvau_parallelization(model, node_name, pe=1, simd=1)
-    print(divider)
-    print('Analyzing auto fully folded model')
-    print(divider)
-    fold_cycle_result = cycle_analysis(model, plot=True)
-    fold_res_result = resource_analysis(model, fpgapart="xcu50-fsvh2104-2L-e", plot=True)
-    print("\n\n")
-    for node_name in node_names:
-        unfold_node(model, node_name, channel_info)
-    print(divider)
-    print('Analyzing auto fully unfolded model')
-    print(divider)
-    unfold_cycle_result = cycle_analysis(model, plot=True)
-    unfold_res_result = resource_analysis(model, fpgapart="xcu50-fsvh2104-2L-e", plot=True)
-    print("\n\n")
+    solve_bottle_neck(model_path, sparsity_info, fpgapart = "xcvu9p-flgb2104-2-i")
+    
+    
+    # model = get_onnx_model(model_path)
+    # onnx_model = onnx.load(model_path)
+    # channel_info = get_layer_channels(onnx_model)
+
+
+
+
+    # print(divider)
+    # print('Analyzing auto fold model')
+    # print(divider)
+    # auto_cycle_result = cycle_analysis(model)
+    # auto_res_result = resource_analysis(model, fpgapart = "xcu50-fsvh2104-2L-e")
+    # print("\n\n")
+    # node_names = get_node_names(model)
+    # for node_name in node_names:
+    #     modify_mvau_parallelization(model, node_name, pe=1, simd=1)
+    # print(divider)
+    # print('Analyzing auto fully folded model')
+    # print(divider)
+    # fold_cycle_result = cycle_analysis(model, plot=True)
+    # fold_res_result = resource_analysis(model, fpgapart="xcu50-fsvh2104-2L-e", plot=True)
+    # print("\n\n")
+    # for node_name in node_names:
+    #     unfold_node(model, node_name, channel_info)
+    # print(divider)
+    # print('Analyzing auto fully unfolded model')
+    # print(divider)
+    # unfold_cycle_result = cycle_analysis(model, plot=True)
+    # unfold_res_result = resource_analysis(model, fpgapart="xcu50-fsvh2104-2L-e", plot=True)
+    # print("\n\n")
 
     # Step 6: Prune the model with LTH approach
 
