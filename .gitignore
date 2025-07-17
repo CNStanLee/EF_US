@@ -7,7 +7,7 @@
 # 允许追踪 .py 和 .log 文件
 !*.py
 !*.log
-
+!*.md
 # 例外：明确忽略某些特定 .log 文件
 **/vivado.log
 **/build_dataflow.log
