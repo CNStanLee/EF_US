@@ -1,0 +1,49 @@
+# Architecture
+arch: 2c3f_relu
+pretrained_model: ./pre-train/2c3f_relu.pt
+w: 4
+a: 4
+random_seed: 1998
+
+# ===== Dataset ===== #
+data_path: ../data/MNIST
+data_set: MNIST
+job_dir: ./experiment/2c3f_relu/95sparsity30epoch
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.001
+
+# ===== Network training config ===== #
+num_epochs: 500
+weight_decay: 1e-4
+momentum: 0.9
+train_batch_size: 256
+eval_batch_size: 256
+prune_rate: 0.9 # Override
+
+# ===== Sparsity ===== #
+conv_type: PretrainConv
+freeze_weights: True
+
+
+# ===== Hardware setup ===== #
+workers: 20
+
+
+    # trainer = Trainer(
+    #     model_name='2c3f_relu',  # 或 'unsw_fc'
+    #     w=4,                # 权重位宽
+    #     a=4,                # 激活位宽
+    #     epochs=500,         # 训练轮数
+    #     batch_size=256,     # 批大小
+    #     lr=0.001,           # 初始学习率
+    #     optimizer='adam',   # 优化器
+    #     weight_decay=1e-4,  # 权重衰减
+    #     lr_scheduler='step',  # 学习率调度器
+    #     patience=25,        # 早停耐心值
+    #     min_lr=1e-7,        # 最小学习率
+    #     momentum=0.9,       # SGD动量
+    #     threshold=0.5,      # 二分类阈值
+    #     clip_weights=True   # 权重裁剪
+    # )

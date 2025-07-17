@@ -8,6 +8,7 @@
 !*.py
 !*.log
 !*.md
+!*.yaml
 # 例外：明确忽略某些特定 .log 文件
 **/vivado.log
 **/build_dataflow.log

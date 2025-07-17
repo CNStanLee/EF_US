@@ -1,0 +1,59 @@
+# Architecture
+arch: unsw_fc
+pretrained_model: pretrained/unsw_fc_w2_a2_pretrained.pth
+w: 2
+a: 2
+random_seed: 1998
+
+# ===== Dataset ===== #
+data_path: ../data/UNSW
+data_set: UNSW
+job_dir: ./experiment/unsw_fc/95sparsity30epoch
+
+# ===== Learning Rate Policy ======== #
+optimizer: adam
+lr: 0.003
+lr_scheduler: plateau
+training_weight_decay: 1e-5
+patience: 50
+min_lr: 3e-7
+
+
+# ===== Network training config ===== #
+training_epochs: 500
+training_batch_size: 10
+binary_threshold: 0.5
+
+
+# ===== LTH training config ===== #
+num_epochs: 500
+weight_decay: 1e-4
+momentum: 0.9
+train_batch_size: 256
+eval_batch_size: 256
+prune_rate: 0.9 # Override
+
+# model_name='unsw_fc',   # 使用全连接模型
+# w=2,                    # 权重位宽
+# a=2,                    # 激活位宽
+# epochs=200,             # 训练轮数（表格数据需要更多epoch）
+# random_seed=1998,       # 随机种子
+# dataset_name='UNSW',    # 数据集名称
+# batch_size=10,         # 较大的批大小（充分利用数据集特性）
+# lr=0.003,              # 较小的学习率（防止过拟合）
+# optimizer='adam',       # 优化器（Adam更适合表格数据）
+# weight_decay=1e-5,      # 较小的权重衰减
+# lr_scheduler='plateau', # 学习率调度器（基于验证性能调整）
+# patience=50,            # 更大的耐心值（数据分布复杂）
+# min_lr=3e-7,            # 最小学习率
+# momentum=0.9,           # SGD动量（虽然使用Adam，但保留默认）
+# threshold=0.4,          # 二分类阈值（优化F1分数）
+# clip_weights=True       # 权重裁剪
+
+# ===== Sparsity ===== #
+conv_type: PretrainConv
+freeze_weights: True
+
+
+# ===== Hardware setup ===== #
+workers: 20
