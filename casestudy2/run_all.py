@@ -8,12 +8,35 @@ import copy
 from estimate import estimate_ip
 from auto_unfold import auto_unfold_json
 import time
+from mutilpe_train import run_multiple_train
 def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998, dataset_name = 'MNIST', pruning_type = 'l1', tryid = "test", folding_config_file="unfold"):
     # Stage 1: init ---------------------------------------------------------
 
+    # parameters
+    # model_name = '2c3f'
+    # w = 4
+    # a = 4
+    # epochs = 500
+    # random_seed = 1998
+    # dataset_name = 'MNIST'
+    # pruning_type = 'l1'
+    # tryid = "test"
+    # folding_config_file="unfold" # auto, unfold, or a json file path
+
+
     # directories
     # no change
-    try_name=f"{model_name}_w{w}_a{a}_{epochs}_{folding_config_file}_{tryid}"
+    
+    # if folding config file is auto or unfold, directly use this name
+    # otherwise, use the given file name, put truncate it to the last file name
+    if folding_config_file == "auto" or folding_config_file == "unfold":
+        folding_config_file_name = folding_config_file
+    else:
+        # truncate the file name to the last file name
+        folding_config_file_name = folding_config_file.split('/')[-1]
+        # delete the extension
+        folding_config_file_name = folding_config_file_name.split('.')[0]
+    try_name=f"{model_name}_w{w}_a{a}_{epochs}_{folding_config_file_name}_{tryid}"
     try_name="/" + try_name + '_' + pruning_type
     script_dir = os.path.dirname(os.path.abspath(__file__))
     folding_json_file = script_dir + f'/estimates_output{try_name}/auto_folding_config.json' 
@@ -68,7 +91,8 @@ def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998,
     log('Stage 6: Generating the IP')
 
     if folding_config_file == "auto":
-        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= auto_json)
+        #generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= auto_json)
+        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= 'auto')
     elif folding_config_file == "unfold":
         generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= unfold_json)
     else:
@@ -145,22 +169,72 @@ if __name__ == "__main__":
     #             pruning_type = 'na',
     #             tryid = "test2",
     #                 folding_config_file="unfold")
-    run_all(model_name = 'tfc',
-    w = 1,
-    a = 1, 
-    epochs = 500,
+    # run_multiple_train()
+    # run_all(model_name = '2c3f',
+    # w = 4,
+    # a = 4, 
+    # epochs = 500,
+    #     random_seed = 1998,
+    #     dataset_name = 'MNIST',
+    #         pruning_type = 'na',
+    #         tryid = "test5",
+    #             folding_config_file="auto")
+    # run_all(model_name = '2c3f',
+    # w = 4,
+    # a = 4, 
+    # epochs = 500,
+    #     random_seed = 1998,
+    #     dataset_name = 'MNIST',
+    #         pruning_type = 'l1',
+    #         tryid = "test5",
+    #             folding_config_file="auto")
+    run_all(model_name = 'unsw_fc',
+    w = 2,
+    a = 2, 
+    epochs = 1000,
         random_seed = 1998,
-        dataset_name = 'MNIST',
+        dataset_name = 'UNSW',
             pruning_type = 'na',
-            tryid = "test3",
-                folding_config_file="unfold")
-    
-    run_all(model_name = '2c3f',
-    w = 1,
-    a = 1, 
-    epochs = 500,
-        random_seed = 1998,
-        dataset_name = 'MNIST',
-            pruning_type = 'na',
-            tryid = "test3",
+            tryid = "tes10",
                 folding_config_file="auto")
+    run_all(model_name = 'unsw_fc',
+    w = 2,
+    a = 2, 
+    epochs = 1000,
+        random_seed = 1998,
+        dataset_name = 'UNSW',
+            pruning_type = 'l1',
+            tryid = "tes10",
+                folding_config_file="auto")
+    run_all(model_name = 'unsw_fc',
+    w = 2,
+    a = 2, 
+    epochs = 1000,
+        random_seed = 1998,
+        dataset_name = 'UNSW',
+            pruning_type = 'na',
+            tryid = "tes10",
+                folding_config_file="unfold")
+
+    run_all(model_name = 'unsw_fc',
+    w = 2,
+    a = 2, 
+    epochs = 1000,
+        random_seed = 1998,
+        dataset_name = 'UNSW',
+            pruning_type = 'l1',
+            tryid = "tes10",
+                folding_config_file="unfold")
+    # run_all(model_name = '2c3f_relu',
+    # w = 4,
+    # a = 4, 
+    # epochs = 500,
+    #     random_seed = 1998,
+    #     dataset_name = 'MNIST',
+    #         pruning_type = 'l1',
+    #         tryid = "test9",
+    #             folding_config_file="/home/changhong/prj/finn/script/EF_US/casestudy2/optimize.json")
+    # test 8 latency not converged
+    # change the optimize.json file to use internal_decoupled
+
+    # if still not converged, try to change parrallel_window of last conv layer to 1

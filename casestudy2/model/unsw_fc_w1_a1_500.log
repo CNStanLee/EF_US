@@ -1,0 +1,3 @@
+Training unsw_fc with weight bit width 1 and activation bit width 1 for 500 epochs.
+Epoch [1/500], LR: 0.010000, Train Loss: 0.1798, Train Acc: 92.54%, Val Loss: 0.1684, Val Acc: 93.40%
+Epoch [2/500], LR: 0.010000, Train Loss: 0.1372, Train Acc: 93.48%, Val Loss: 0.1441, Val Acc: 93.36%

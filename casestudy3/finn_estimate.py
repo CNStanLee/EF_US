@@ -39,12 +39,12 @@ import numpy as np
 
 from models import get_model
 from dataset import get_dataloaders
-from train import train_try
+# from train import train_try
 
 
 # ----- USER PARAS ------ #
 
-def estimate_ip(model_name, model, weight, activation, try_name= "/model_generation_test", folding_config_file = "auto"):
+def estimate_ip(model_name, model, weight, activation, try_name= "model_generation_test", folding_config_file = "auto"):
     # model_name = "2c3f_relu"
     # model_weight = "./model/final_2c3f_relu_w4_a4_pruned.pth"
     # epochs = 50
@@ -71,13 +71,14 @@ def estimate_ip(model_name, model, weight, activation, try_name= "/model_generat
     pynq_part_map["RFSoC4x2"] = "xczu48dr-ffvg1517-2-e"
     pynq_part_map["KV260_SOM"] = "xck26-sfvc784-2LV-c"
     pynq_part_map["U50"] = "xcu50-fsvh2104-2L-e"
+    pynq_part_map["XCvu9P"] = "xcvu9p-flgb2104-2-i"
 
 
-    build_dir = "./build" + try_name
+    build_dir = "./build/" + try_name
     model_dir = "./model"
     data_dir = "./data"
-    estimates_output_dir = "./estimates_output" + try_name
-    rtlsim_output_dir = "./rtlsim_output" + try_name
+    estimates_output_dir = f"./estimates_output/{model_name}_{weight}_{activation}_{try_name}"
+    rtlsim_output_dir = f"./rtlsim_output/{try_name}"
     #tmp_path = "./tmp" + try_name
 
     # convert tmp_path to absolute path
@@ -154,8 +155,8 @@ def estimate_ip(model_name, model, weight, activation, try_name= "/model_generat
         output_dir          = estimates_output_dir,
         target_fps          = 100000000,
         mvau_wwidth_max     = 10000, # test
-        synth_clk_period_ns = 10.0,
-        fpga_part           = pynq_part_map["U50"],
+        synth_clk_period_ns = 1.0,
+        fpga_part           = pynq_part_map["XCvu9P"],
         steps               = build_cfg.estimate_only_dataflow_steps,
         generate_outputs=[
             build_cfg.DataflowOutputType.ESTIMATE_REPORTS,
@@ -184,4 +185,4 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(f"./model/final_{model_name}_w{weight}_a{activation}_l1_pruned.pth"))
     model.to(torch.device("cpu"))  # Ensure
 
-    estimate_ip(model_name=model_name, model = model, weight=weight, activation=activation, try_name="/test5")
+    estimate_ip(model_name=model_name, model = model, weight=weight, activation=activation, try_name="test5")

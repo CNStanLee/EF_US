@@ -10,17 +10,6 @@ from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
 import onnx
-# from finn.util.test import get_test_model_trained
-# from brevitas.export import export_qonnx
-# from qonnx.util.cleanup import cleanup as qonnx_cleanup
-# from qonnx.core.modelwrapper import ModelWrapper
-# from finn.transformation.qonnx.convert_qonnx_to_finn import ConvertQONNXtoFINN
-# from qonnx.transformation.infer_shapes import InferShapes
-# from qonnx.transformation.fold_constants import FoldConstants
-# from qonnx.transformation.general import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
-# from finn.util.basic import make_build_dir
-# from finn.util.visualization import showInNetron
-from dataclasses import dataclass
 import copy
 import torch.nn.utils.prune as prune
 import numpy as np
@@ -45,7 +34,7 @@ def save_to_csv(results, filename):
         writer.writerow(results[0]._fields)
         # 写入数据
         for res in results:
-            writer.writerow([res.layer_path, res.param_count ,res.pruning_percentage, 
+            writer.writerow([res.layer_path, res.layer_type, res.param_count ,res.pruning_percentage, 
                             res.test_accuracy, res.accuray_drop])
 
 # 从CSV读取结果
@@ -263,7 +252,7 @@ def sensitivity_analysis(model, test_loader, sparsity_info, pruning_type='l1', s
                 )
                 results.append(result)
             
-            print(f"Layer {layer_path}, Layer type {layer_type} Pruning {percentage*100:.0f}% - Test Accuracy: {test_acc:.2f}%, Accuracy Drop: {result.accuray_drop:.2f}%")
+                print(f"Layer {layer_path}, Layer type {layer_type} Pruning {percentage*100:.0f}% - Test Accuracy: {test_acc:.2f}%, Accuracy Drop: {result.accuray_drop:.2f}%")
     return results
 
 
@@ -624,7 +613,7 @@ def auto_prune_model_sensitivity(ori_model, model_name, w, a, dataset_name='MNIS
     final_accuracy_drop_tolerance = 10  # 1% final accuracy drop tolerance
     retrain_epochs = 10  # number of epochs to retrain the model after pruning
     final_retrain_epochs = 50  # number of epochs to retrain the final model after pruning
-    sensitivity_step = 10    # step size for sensitivity analysis, 1% for each step
+    sensitivity_step = 1    # step size for sensitivity analysis, 1% for each step
     tolerance_step = 5  # step size for increasing accuracy drop tolerance
     # load the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

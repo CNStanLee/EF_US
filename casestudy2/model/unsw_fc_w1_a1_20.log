@@ -1,0 +1,45 @@
+Training unsw_fc with weight bit width 1 and activation bit width 1 for 20 epochs.
+Epoch [1/20], LR: 0.010000, Train Loss: 0.1768, Train Acc: 92.54%, Val Loss: 0.1627, Val Acc: 93.34%
+Epoch [2/20], LR: 0.010000, Train Loss: 0.1369, Train Acc: 93.47%, Val Loss: 0.1442, Val Acc: 93.33%
+Epoch [3/20], LR: 0.010000, Train Loss: 0.1313, Train Acc: 93.62%, Val Loss: 0.1288, Val Acc: 93.75%
+Epoch [4/20], LR: 0.010000, Train Loss: 0.1299, Train Acc: 93.58%, Val Loss: 0.1310, Val Acc: 93.36%
+Epoch [5/20], LR: 0.001000, Train Loss: 0.1252, Train Acc: 93.74%, Val Loss: 0.1347, Val Acc: 93.50%
+Epoch [6/20], LR: 0.001000, Train Loss: 0.1222, Train Acc: 93.98%, Val Loss: 0.1367, Val Acc: 93.95%
+Epoch [7/20], LR: 0.001000, Train Loss: 0.1219, Train Acc: 93.88%, Val Loss: 0.1357, Val Acc: 93.51%
+Epoch [8/20], LR: 0.001000, Train Loss: 0.1204, Train Acc: 93.98%, Val Loss: 0.1402, Val Acc: 93.49%
+Epoch [9/20], LR: 0.000100, Train Loss: 0.1197, Train Acc: 94.01%, Val Loss: 0.1384, Val Acc: 93.83%
+Epoch [10/20], LR: 0.000100, Train Loss: 0.1198, Train Acc: 94.12%, Val Loss: 0.1410, Val Acc: 93.72%
+Epoch [11/20], LR: 0.000100, Train Loss: 0.1201, Train Acc: 94.15%, Val Loss: 0.1386, Val Acc: 93.59%
+Epoch [12/20], LR: 0.000100, Train Loss: 0.1196, Train Acc: 94.09%, Val Loss: 0.1411, Val Acc: 93.62%
+Epoch [13/20], LR: 0.000010, Train Loss: 0.1186, Train Acc: 94.17%, Val Loss: 0.1391, Val Acc: 93.56%
+Epoch [14/20], LR: 0.000010, Train Loss: 0.1181, Train Acc: 94.18%, Val Loss: 0.1424, Val Acc: 93.58%
+Epoch [15/20], LR: 0.000010, Train Loss: 0.1188, Train Acc: 94.11%, Val Loss: 0.1399, Val Acc: 93.66%
+Epoch [16/20], LR: 0.000010, Train Loss: 0.1189, Train Acc: 94.10%, Val Loss: 0.1443, Val Acc: 93.67%
+Epoch [17/20], LR: 0.000001, Train Loss: 0.1187, Train Acc: 94.12%, Val Loss: 0.1390, Val Acc: 93.55%
+Epoch [18/20], LR: 0.000001, Train Loss: 0.1181, Train Acc: 94.18%, Val Loss: 0.1446, Val Acc: 93.66%
+Epoch [19/20], LR: 0.000001, Train Loss: 0.1194, Train Acc: 94.16%, Val Loss: 0.1420, Val Acc: 93.64%
+Epoch [20/20], LR: 0.000001, Train Loss: 0.1194, Train Acc: 94.15%, Val Loss: 0.1401, Val Acc: 93.53%
+Test Accuracy of the best model on the test images: 83.43%
+Model saved to ./model/unsw_fc_w1_a1_20.pth
+Epoch [1/20], LR: 0.010000, Train Loss: 0.1776, Train Acc: 92.59%, Val Loss: 0.1898, Val Acc: 93.35%
+Epoch [2/20], LR: 0.010000, Train Loss: 0.1375, Train Acc: 93.52%, Val Loss: 0.1315, Val Acc: 93.52%
+Epoch [3/20], LR: 0.010000, Train Loss: 0.1326, Train Acc: 93.64%, Val Loss: 0.1295, Val Acc: 93.37%
+Epoch [4/20], LR: 0.010000, Train Loss: 0.1303, Train Acc: 93.54%, Val Loss: 0.1339, Val Acc: 94.02%
+Epoch [5/20], LR: 0.001000, Train Loss: 0.1255, Train Acc: 93.91%, Val Loss: 0.1417, Val Acc: 93.91%
+Epoch [6/20], LR: 0.001000, Train Loss: 0.1236, Train Acc: 94.01%, Val Loss: 0.1473, Val Acc: 93.80%
+Epoch [7/20], LR: 0.001000, Train Loss: 0.1223, Train Acc: 94.10%, Val Loss: 0.1416, Val Acc: 93.46%
+Epoch [8/20], LR: 0.001000, Train Loss: 0.1220, Train Acc: 94.23%, Val Loss: 0.1495, Val Acc: 93.50%
+Epoch [9/20], LR: 0.000100, Train Loss: 0.1204, Train Acc: 94.22%, Val Loss: 0.1462, Val Acc: 93.80%
+Epoch [10/20], LR: 0.000100, Train Loss: 0.1214, Train Acc: 94.30%, Val Loss: 0.1432, Val Acc: 93.66%
+Epoch [11/20], LR: 0.000100, Train Loss: 0.1207, Train Acc: 94.36%, Val Loss: 0.1399, Val Acc: 93.66%
+Epoch [12/20], LR: 0.000100, Train Loss: 0.1211, Train Acc: 94.30%, Val Loss: 0.1441, Val Acc: 93.69%
+Epoch [13/20], LR: 0.000010, Train Loss: 0.1197, Train Acc: 94.34%, Val Loss: 0.1437, Val Acc: 93.62%
+Epoch [14/20], LR: 0.000010, Train Loss: 0.1197, Train Acc: 94.38%, Val Loss: 0.1420, Val Acc: 93.54%
+Epoch [15/20], LR: 0.000010, Train Loss: 0.1205, Train Acc: 94.32%, Val Loss: 0.1422, Val Acc: 93.76%
+Epoch [16/20], LR: 0.000010, Train Loss: 0.1204, Train Acc: 94.38%, Val Loss: 0.1450, Val Acc: 93.72%
+Epoch [17/20], LR: 0.000001, Train Loss: 0.1194, Train Acc: 94.34%, Val Loss: 0.1398, Val Acc: 93.56%
+Epoch [18/20], LR: 0.000001, Train Loss: 0.1194, Train Acc: 94.40%, Val Loss: 0.1439, Val Acc: 93.68%
+Epoch [19/20], LR: 0.000001, Train Loss: 0.1202, Train Acc: 94.37%, Val Loss: 0.1435, Val Acc: 93.68%
+Epoch [20/20], LR: 0.000001, Train Loss: 0.1206, Train Acc: 94.38%, Val Loss: 0.1417, Val Acc: 93.49%
+Test Accuracy of the best model on the test images: 83.52%
+Model saved to ./model/unsw_fc_w1_a1_20.pth

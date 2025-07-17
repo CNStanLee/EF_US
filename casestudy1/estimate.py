@@ -149,6 +149,7 @@ def estimate_ip(model_name, model, weight, activation, try_name= "/model_generat
     cfg_estimates = build.DataflowBuildConfig(
         output_dir          = estimates_output_dir,
         target_fps          = 100000000,
+        mvau_wwidth_max     = 10000, # test
         synth_clk_period_ns = 10.0,
         fpga_part           = pynq_part_map["U50"],
         steps               = build_cfg.estimate_only_dataflow_steps,

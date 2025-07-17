@@ -1,9 +1,19 @@
 import torch
+import torch.nn as nn
 from torch.nn import BatchNorm1d
 from torch.nn import BatchNorm2d
 from torch.nn import MaxPool2d, AvgPool2d
 from torch.nn import Module
 from torch.nn import ModuleList
+from torch.nn import Dropout
+
+import configparser
+import ast
+import os
+from functools import reduce
+from operator import mul
+
+import brevitas.nn as qnn
 from brevitas.core.restrict_val import RestrictValueType
 from brevitas.nn import QuantConv2d
 from brevitas.nn import QuantIdentity
@@ -11,34 +21,20 @@ from brevitas.nn import QuantLinear
 from brevitas_examples.bnn_pynq.models.common import CommonActQuant
 from brevitas_examples.bnn_pynq.models.common import CommonWeightQuant
 from brevitas_examples.bnn_pynq.models.tensor_norm import TensorNorm
-import os
 from brevitas.core.scaling import ScalingImplType
 from brevitas.core.quant import QuantType
-import brevitas.nn as qnn
-import ast
-from functools import reduce
-from operator import mul
-from torch.nn import Dropout
-
 from brevitas.nn import QuantLinear, QuantReLU
-import torch.nn as nn
 
-DROPOUT = 0.2
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 print(f"Current working directory: {os.getcwd()}")
 
-import configparser
-
-# CNV_OUT_CH_POOL = [(64, False), (64, True), (128, False), (128, True), (256, False), (256, False)]
-# INTERMEDIATE_FC_FEATURES = [(256, 512), (512, 512)]
-# LAST_FC_IN_FEATURES = 512
-# LAST_FC_PER_OUT_CH_SCALING = False
-# POOL_SIZE = 2
-# KERNEL_SIZE = 3
 
 # Model Name
-model_name = '2c3f1w1a_mnist_new'
+# model_name = '2c3f1w1a_mnist_new'
+# DROPOUT = 0.2
 # LeNet-5
 CNV_OUT_CH_POOL = [(6, True), (16, True), (120, False)]  
 INTERMEDIATE_FC_FEATURES = [(120, 84)]  
@@ -46,20 +42,21 @@ LAST_FC_IN_FEATURES = 84
 LAST_FC_PER_OUT_CH_SCALING = False
 POOL_SIZE = 2  
 KERNEL_SIZE = 5  
-# Quant Configuration
-config = configparser.ConfigParser()
-config['MODEL'] = {
-    'NUM_CLASSES': '10',
-    'IN_CHANNELS': '1',
-    'DTASET': 'MNIST',
-}
-config['QUANT'] = {
-    'WEIGHT_BIT_WIDTH': '1',
-    'ACT_BIT_WIDTH': '1',
-    'IN_BIT_WIDTH': '8',
-}
-
 DROPOUT = 0.2
+# Quant Configuration
+# config = configparser.ConfigParser()
+# config['MODEL'] = {
+#     'NUM_CLASSES': '10',
+#     'IN_CHANNELS': '1',
+#     'DTASET': 'MNIST',
+# }
+# config['QUANT'] = {
+#     'WEIGHT_BIT_WIDTH': '1',
+#     'ACT_BIT_WIDTH': '1',
+#     'IN_BIT_WIDTH': '8',
+# }
+
+
 
 class CNV(Module):
 
@@ -239,10 +236,6 @@ class CNV_RELU(Module):
             x = mod(x)
         return x 
 
-
-
-
-
 class FC(Module):
 
     def __init__(
@@ -338,17 +331,18 @@ def unsw_fc(w = 2, a = 2):
     num_classes = 1   
 
     model = nn.Sequential(
+      #qnn.QuantIdentity(bit_width=a), # add input quantization
       qnn.QuantLinear(input_size, hidden1, bias=True, weight_bit_width=weight_bit_width),
       nn.BatchNorm1d(hidden1),
-      nn.Dropout(0.5),
+      nn.Dropout(0),
       qnn.QuantReLU(bit_width=act_bit_width),
       qnn.QuantLinear(hidden1, hidden2, bias=True, weight_bit_width=weight_bit_width),
       nn.BatchNorm1d(hidden2),
-      nn.Dropout(0.5),
+      nn.Dropout(0),
       qnn.QuantReLU(bit_width=act_bit_width),
       qnn.QuantLinear(hidden2, hidden3, bias=True, weight_bit_width=weight_bit_width),
       nn.BatchNorm1d(hidden3),
-      nn.Dropout(0.5),
+      nn.Dropout(0),
       qnn.QuantReLU(bit_width=act_bit_width),
       qnn.QuantLinear(hidden3, num_classes, bias=True, weight_bit_width=weight_bit_width)
     )

@@ -37,9 +37,10 @@ def run_multiple_train():
     # w_set = [1]
     # a_set = [1]
     w_a_set = [(8, 1), (8, 2), (8, 4), (1, 8), (2, 8), (4, 8)]
+    #w_a_set = [(2, 2)]
     # model_names = ['2c3f', 'tfc', 'sfc', 'lfc']
-    # model_names = ['tfc', 'sfc', 'lfc']
-    model_names = ['sfc', 'tfc']
+    model_names = ['tfc', 'sfc']
+    # model_names = ['unsw_fc']
     epochs = 500
     for model_name in model_names:
         print(f"Training model {model_name} with different weight and activation bit widths")
@@ -51,7 +52,8 @@ def run_multiple_train():
         #         print(f"Finished training model with weight bit width {w} and activation bit width {a}")
         for (w, a) in w_a_set:
                 print(f"Training model with weight bit width {w} and activation bit width {a}")
-                train_try(model_name = model_name, w=w, a=a, epochs=epochs, random_seed=1998)
+                # train_try(model_name = model_name, w=w, a=a, epochs=epochs, random_seed=1998, dataset_name='UNSW')
+                train_try(model_name = model_name, w=w, a=a, epochs=epochs, random_seed=1998, dataset_name='MNIST')
                 print(f"Finished training model with weight bit width {w} and activation bit width {a}")
 
 

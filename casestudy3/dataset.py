@@ -1,20 +1,14 @@
-import torch.nn.functional as F
-from brevitas.nn import QuantConv2d, QuantLinear, QuantReLU, QuantIdentity
-from brevitas.quant import Int8WeightPerTensorFixedPoint, Int8ActPerTensorFixedPoint
 import torch
+import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+from torch.utils.data import TensorDataset
+from torchvision import datasets, transforms
 from tqdm import tqdm
 import os
-from torch.utils.data import DataLoader
-import torch
 import onnx
-from brevitas.export import export_qonnx
-import os
 import numpy as np
-from torch.utils.data import TensorDataset
 import urllib.request
 
 data_dir = "./data"
@@ -26,7 +20,7 @@ print(f"Data directory: {data_dir}")
 
 
 
-def get_dataloaders(dataset_name='MNIST'):
+def get_dataloaders(dataset_name='MNIST', batch_size=256):
     if dataset_name == 'MNIST':
         # Load the MNIST dataset
         transform = transforms.Compose([
@@ -84,4 +78,4 @@ def get_dataloaders(dataset_name='MNIST'):
         return train_loader, val_loader, test_loader
 
     else:
-        raise ValueError(f"Unsupported dataset: {dataset_name}. Currently only MNIST is supported.")
+        raise ValueError(f"Unsupported dataset: {dataset_name}. Currently only MNIST and UNSW are supported.")

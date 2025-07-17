@@ -8,6 +8,7 @@ import copy
 from estimate import estimate_ip
 from auto_unfold import auto_unfold_json
 import time
+from mutilpe_train import run_multiple_train
 def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998, dataset_name = 'MNIST', pruning_type = 'l1', tryid = "test", folding_config_file="unfold"):
     # Stage 1: init ---------------------------------------------------------
 
@@ -80,7 +81,8 @@ def run_all(model_name = '2c3f', w = 4, a = 4, epochs = 500, random_seed = 1998,
     log('Stage 6: Generating the IP')
 
     if folding_config_file == "auto":
-        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= auto_json)
+        #generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= auto_json)
+        generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= 'auto')
     elif folding_config_file == "unfold":
         generate_ip(model_name=model_name, model = pruned_model, weight=w, activation=a, try_name=try_name, folding_config_file= unfold_json)
     else:
@@ -157,22 +159,22 @@ if __name__ == "__main__":
     #             pruning_type = 'na',
     #             tryid = "test2",
     #                 folding_config_file="unfold")
-    run_all(model_name = 'tfc',
-    w = 1,
-    a = 1, 
-    epochs = 500,
-        random_seed = 1998,
-        dataset_name = 'MNIST',
-            pruning_type = 'na',
-            tryid = "test3",
-                folding_config_file="unfold")
-    
-    run_all(model_name = '2c3f',
-    w = 1,
-    a = 1, 
-    epochs = 500,
-        random_seed = 1998,
-        dataset_name = 'MNIST',
-            pruning_type = 'na',
-            tryid = "test3",
-                folding_config_file="auto")
+    run_multiple_train()
+    # run_all(model_name = '2c3f',
+    # w = 4,
+    # a = 4, 
+    # epochs = 500,
+    #     random_seed = 1998,
+    #     dataset_name = 'MNIST',
+    #         pruning_type = 'na',
+    #         tryid = "test5",
+    #             folding_config_file="auto")
+    # run_all(model_name = '2c3f',
+    # w = 4,
+    # a = 4, 
+    # epochs = 500,
+    #     random_seed = 1998,
+    #     dataset_name = 'MNIST',
+    #         pruning_type = 'l1',
+    #         tryid = "test5",
+    #             folding_config_file="auto")
