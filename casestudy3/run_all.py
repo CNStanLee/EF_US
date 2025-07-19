@@ -76,10 +76,6 @@ def main():
         logger.log(f"Loading pretrained model from {pretrained_model}")
         model = get_model(model_name, w, a)
         
-        # pre_layer = qnn.QuantIdentity(bit_width=a)
-        # model = torch.nn.Sequential(pre_layer, model)
-        # # save the weight to new pth file
-        # torch.save(model.state_dict(), pretrained_model)
         trained_model = trainer.load_pretrained(model, pretrained_model)   
     else:
         logger.log("No pretrained model provided, using the trained model.")
@@ -137,44 +133,15 @@ def main():
                        try_name=try_id)
 
 
-    model_path = f"./estimates_output/{model_name}_{w}_{a}_{try_id}/intermediate_models/step_generate_estimate_reports.onnx"
+    # model_path = f"./estimates_output/{model_name}_{w}_{a}_{try_id}/intermediate_models/step_generate_estimate_reports.onnx"
 
-
-    solve_bottle_neck(model_path, sparsity_info, fpgapart = "xcvu9p-flgb2104-2-i")
+    estimation_path = f"./estimates_output/{model_name}_{w}_{a}_{try_id}"
+    res = solve_bottle_neck(estimation_path, sparsity_info, fpgapart = "xcvu9p-flgb2104-2-i")
+    sparsity_config = res['sparsity_config']
+    print(f"Sparsity Config: {sparsity_config}")
     
-    
-    # model = get_onnx_model(model_path)
-    # onnx_model = onnx.load(model_path)
-    # channel_info = get_layer_channels(onnx_model)
-
-
-
-
-    # print(divider)
-    # print('Analyzing auto fold model')
-    # print(divider)
-    # auto_cycle_result = cycle_analysis(model)
-    # auto_res_result = resource_analysis(model, fpgapart = "xcu50-fsvh2104-2L-e")
-    # print("\n\n")
-    # node_names = get_node_names(model)
-    # for node_name in node_names:
-    #     modify_mvau_parallelization(model, node_name, pe=1, simd=1)
-    # print(divider)
-    # print('Analyzing auto fully folded model')
-    # print(divider)
-    # fold_cycle_result = cycle_analysis(model, plot=True)
-    # fold_res_result = resource_analysis(model, fpgapart="xcu50-fsvh2104-2L-e", plot=True)
-    # print("\n\n")
-    # for node_name in node_names:
-    #     unfold_node(model, node_name, channel_info)
-    # print(divider)
-    # print('Analyzing auto fully unfolded model')
-    # print(divider)
-    # unfold_cycle_result = cycle_analysis(model, plot=True)
-    # unfold_res_result = resource_analysis(model, fpgapart="xcu50-fsvh2104-2L-e", plot=True)
-    # print("\n\n")
-
     # Step 6: Prune the model with LTH approach
+
 
     # Step 7: generate the IP
 

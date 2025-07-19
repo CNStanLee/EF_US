@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 from qonnx.custom_op.registry import getCustomOp
 import onnx
 from collections import defaultdict
+import json
+import onnx
 
 pynq_part_map = dict()
 pynq_part_map["Ultra96"] = "xczu3eg-sbva484-1-e"
@@ -27,6 +29,61 @@ pynq_part_map["XCvu9P"] = "xcvu9p-flgb2104-2-i"
 spliter = "----------------------------------------"
 
 from collections import defaultdict
+
+
+def extract_folding_info_from_onnx(onnx_path):
+    """从ONNX文件中提取PE、SIMD、MH和MW信息（MH/MW仅用于判断）"""
+    model = onnx.load(onnx_path)
+    folding_info = {}
+    
+    for node in model.graph.node:
+        if node.op_type == "MVAU_hls":
+            attrs = {attr.name: attr for attr in node.attribute}
+            layer_name = node.name
+            pe = attrs["PE"].i
+            simd = attrs["SIMD"].i
+            mh = attrs["MH"].i if "MH" in attrs else 1  # 仅用于判断
+            mw = attrs["MW"].i if "MW" in attrs else 1  # 仅用于判断
+            
+            folding_info[layer_name] = {
+                "PE": pe,
+                "SIMD": simd,
+                "_MH": mh,  # 加下划线表示临时使用
+                "_MW": mw   # 加下划线表示临时使用
+            }
+    
+    return folding_info
+
+def is_fully_unfolded(layer_info):
+    """判断层是否完全展开（使用临时MH/MW）"""
+    return (layer_info["PE"] == layer_info["_MH"] and 
+            layer_info["SIMD"] == layer_info["_MW"])
+
+def update_folding_config(config_path, onnx_info, output_path):
+    """更新折叠配置文件（不写入MH/MW）"""
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
+    for layer_name, layer_info in config.items():
+        if layer_name == "Defaults":
+            continue
+        
+        if layer_name in onnx_info:
+            # 仅更新PE和SIMD
+            layer_info["PE"] = onnx_info[layer_name]["PE"]
+            layer_info["SIMD"] = onnx_info[layer_name]["SIMD"]
+            
+            # 使用临时MH/MW判断是否完全展开
+            if is_fully_unfolded(onnx_info[layer_name]):
+                layer_info["mem_mode"] = "internal_embedded"
+                print(f"层 {layer_name} 已识别为完全展开 (PE={layer_info['PE']}, SIMD={layer_info['SIMD']})"
+                      f"，已将mem_mode设置为internal_embedded")
+    
+    with open(output_path, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    return config
+
 
 def get_layer_channels(onnx_model):
     """从ONNX模型中提取各层的输入输出通道数"""
@@ -303,293 +360,12 @@ def find_bottle_neck_excluding(cycle_dict, skip_indices):
     candidate_layers.sort(key=lambda x: x[1], reverse=True)
     return candidate_layers[0][0], candidate_layers[0][1]
 
-# def solve_bottle_neck(model_path, sparsity_info, fpgapart="xcvu9p-flgb2104-2-i"):
-#     # Load and prepare the model
-#     model = get_onnx_model(model_path)
-#     onnx_model = onnx.load(model_path)
-#     channel_info = get_layer_channels(onnx_model)
-    
-#     # FPGA resource configuration
-#     fpga_resources = {
-#         "xcu50-fsvh2104-2L-e": 1728000,
-#         "xcvu9p-flgb2104-2-i": 2586000
-#     }
-#     available_luts = fpga_resources.get(fpgapart, 2586000)  # Default to xcvu9p
-    
-#     # Initial model analysis
-#     auto_cycle = cycle_analysis(model, plot=False)
-#     auto_res = resource_analysis(model, fpgapart=fpgapart, plot=False)
-    
-#     # Convert list-based sparsity info to layer-keyed dictionary
-#     sparsity_dict = {}
-#     for i, sparsity in enumerate(sparsity_info):
-#         layer_name = f'MVAU_hls_{i}'
-#         sparsity_dict[layer_name] = sparsity
-    
-#     print(f"{spliter}\nSparsity Information (by layer):")
-#     for layer, sparsity in sparsity_dict.items():
-#         print(f"{layer}: {sparsity}%")
-    
-#     print(f"{spliter}\nAuto Cycle Result:\n{auto_cycle}")
-#     print(f"{spliter}\nAuto Resource Result:\n{auto_res}")
-    
-#     # Create unfolded model for comparison
-#     unfold_model = get_onnx_model(model_path)
-#     node_names = get_node_names(unfold_model)
-#     for node_name in node_names:
-#         unfold_node(unfold_model, node_name, channel_info)
-    
-#     unfold_cycle = cycle_analysis(unfold_model, plot=False)
-#     unfold_res = resource_analysis(unfold_model, fpgapart=fpgapart, plot=True)
-    
-#     print(f"{spliter}\nUnfold Cycle Result:\n{unfold_cycle}")
-#     print(f"{spliter}\nUnfold Resource Result:\n{unfold_res}{spliter}")
-    
-#     # Step 1: Apply sparsity-aware unfolding decisions
-#     num_layers = len(auto_res)
-#     unfold_decision = [0] * num_layers
-#     sparsity_decision = [0] * num_layers
-#     scaled_unfold_res = {}
-    
-#     for i in range(num_layers):
-#         layer_name = f'MVAU_hls_{i}'
-        
-#         # Calculate sparsity-scaled resources
-#         sparsity_ratio = (100 - sparsity_dict[layer_name]) / 100.0
-#         scaled_unfold_res[layer_name] = unfold_res[layer_name] * sparsity_ratio
-        
-#         # Decide whether to unfold based on resource savings
-#         if scaled_unfold_res[layer_name] <= auto_res[layer_name]:
-#             unfold_decision[i] = 1
-#             sparsity_decision[i] = 1
-    
-#     print("Scaled Unfold Resources (by layer):")
-#     for layer, res in scaled_unfold_res.items():
-#         print(f"{layer}: {res:.2f} LUTs")
-    
-#     print(f"Auto Resources (by layer):")
-#     for layer, res in auto_res.items():
-#         print(f"{layer}: {res} LUTs")
-    
-#     print(f"Unfold Decision: {unfold_decision}")
-#     print(f"Sparsity Decision: {sparsity_decision}")
-    
-#     # Create modified model with unfolding decisions applied
-#     mod_model = get_onnx_model(model_path)
-#     node_names = get_node_names(mod_model)
-#     for i, node_name in enumerate(node_names):
-#         if unfold_decision[i] == 1:
-#             unfold_node(mod_model, node_name, channel_info)
-#             print(f"Unfolded node: {node_name}")
-    
-#     # Analyze modified model
-#     mod_cycle = cycle_analysis(mod_model, plot=False)
-#     mod_res = resource_analysis(mod_model, fpgapart=fpgapart, plot=True)
-    
-#     print(f"{spliter}\nModified Cycle Result:\n{mod_cycle}")
-#     print(f"{spliter}\nModified Resource Result:\n{mod_res}{spliter}")
-    
-#     # Step 2: Iterative bottleneck optimization
-#     # Step 2: Iterative bottleneck optimization
-#     optimized = True
-#     iteration = 1
-#     skip_layers = set()  # Track layers that can't be unfolded further
-#     double_unfold = set()   # Track layers with double unfolding
-    
-#     print(f"{spliter}\nStarting iterative optimization with {len(node_names)} layers")
-#     print(f"Initial skip layers: {skip_layers}")
-    
-#     while optimized:
-#         print(f"\n{spliter}\nIteration {iteration}: Bottleneck Optimization")
-#         print(f"Skipped layers: {skip_layers}")
-#         print(f"Double unfolded layers: {double_unfold}")
-        
-#         # Find current bottleneck excluding skipped layers
-#         bottleneck_layer, max_cycle = find_bottle_neck_excluding(mod_cycle, skip_layers)
-        
-#         # Exit condition: no more optimizable layers
-#         if bottleneck_layer is None:
-#             print("No optimizable layers left. Exiting optimization loop.")
-#             optimized = False
-#             break
-        
-#         bottleneck_index = int(bottleneck_layer.split('_')[-1])
-#         print(f"Current bottleneck: {bottleneck_layer} with {max_cycle} cycles")
-        
-#         # DEBUG: Show all candidate layers
-#         print("Candidate bottleneck layers:")
-#         candidate_layers = []
-#         for layer, cycles in mod_cycle.items():
-#             try:
-#                 layer_idx = int(layer.split('_')[-1])
-#                 if layer_idx not in skip_layers:
-#                     candidate_layers.append((layer, cycles, layer_idx))
-#             except (ValueError, IndexError):
-#                 continue
-        
-#         # Sort by cycle count descending
-#         candidate_layers.sort(key=lambda x: x[1], reverse=True)
-#         for layer, cycles, idx in candidate_layers:
-#             status = ""
-#             if idx in double_unfold:
-#                 status = " (double unfolded)"
-#             elif unfold_decision[idx] == 1:
-#                 status = " (unfolded)"
-#             print(f"  {layer}: {cycles} cycles{status}")
-        
-#         # Check if we can optimize this layer
-#         if (bottleneck_index in skip_layers or 
-#             bottleneck_index >= len(unfold_decision)):
-#             print(f"Skipping layer {bottleneck_layer} (marked to skip)")
-#             skip_layers.add(bottleneck_index)
-#             continue
-        
-#         # Calculate resource impact of unfolding this layer
-#         layer_name = f'MVAU_hls_{bottleneck_index}'
-#         current_res = mod_res[layer_name]
-        
-#         # Check if we should do double unfold (if previously attempted)
-#         unfold_factor = 1
-#         if bottleneck_index in double_unfold:
-#             # Already double unfolded - skip this layer
-#             print(f"Layer {bottleneck_index} already double unfolded. Skipping.")
-#             skip_layers.add(bottleneck_index)
-#             continue
-#         elif unfold_decision[bottleneck_index] == 1:
-#             # Already unfolded once - try double unfold
-#             unfold_factor = 2
-#             print(f"Attempting double unfold on {layer_name}")
-#         else:
-#             print(f"Attempting unfold on {layer_name}")
-        
-#         # Temporary unfold decision for this layer
-#         temp_unfold_decision = unfold_decision.copy()
-#         temp_unfold_decision[bottleneck_index] = unfold_factor
-        
-#         # Create temporary model with new unfold decision
-#         temp_model = get_onnx_model(model_path)
-#         for i, node_name in enumerate(node_names):
-#             if temp_unfold_decision[i] > 0:
-#                 # Handle unfolding based on factor
-#                 if temp_unfold_decision[i] == 2:
-#                     # First unfold
-#                     unfold_node(temp_model, node_name, channel_info)
-#                     # Second unfold (on already unfolded node)
-#                     unfold_node(temp_model, node_name, channel_info)
-#                 else:
-#                     unfold_node(temp_model, node_name, channel_info)
-        
-#         # Analyze temporary model
-#         temp_res = resource_analysis(temp_model, fpgapart=fpgapart, plot=False)
-        
-#         # Apply sparsity scaling to unfolded resources
-#         total_resources = 0
-#         for layer, res in temp_res.items():
-#             try:
-#                 idx = int(layer.split('_')[-1])
-#                 if temp_unfold_decision[idx] > 0 and sparsity_decision[idx] == 1:
-#                     sparsity_ratio = (100 - sparsity_dict[layer]) / 100.0
-#                     total_resources += res * sparsity_ratio
-#                 else:
-#                     total_resources += res
-#             except (ValueError, IndexError):
-#                 total_resources += res
-        
-#         print(f"Projected total LUTs: {total_resources:.2f}/{available_luts}")
-        
-#         # Check resource constraints
-#         if total_resources <= available_luts:
-#             print(f"Resource constraint satisfied. Applying {'double ' if unfold_factor > 1 else ''}unfold to {layer_name}")
-            
-#             # Update model and decisions
-#             mod_model = temp_model
-#             unfold_decision = temp_unfold_decision
-#             if unfold_factor > 1:
-#                 double_unfold.add(bottleneck_index)
-#                 print(f"Marked layer {bottleneck_index} as double unfolded")
-            
-#             # Reanalyze model
-#             mod_cycle = cycle_analysis(mod_model, plot=False)
-#             mod_res = resource_analysis(mod_model, fpgapart=fpgapart, plot=True)
-            
-#             print(f"New bottleneck cycle: {max(mod_cycle.values())}")
-#             print(f"New resource total: {sum(mod_res.values())}")
-#         else:
-#             print(f"Resource constraint violated ({total_resources:.2f} > {available_luts})")
-            
-#             if unfold_factor == 1:
-#                 # First violation - try double unfold
-#                 print("Attempting double unfold to reduce resource usage")
-#                 double_unfold.add(bottleneck_index)
-#             else:
-#                 # Still violates after double unfold - skip this layer
-#                 print("Double unfold still violates constraints. Skipping layer.")
-#                 skip_layers.add(bottleneck_index)
-        
-#         # Update iteration counter
-#         iteration += 1
-        
-#         # Safety break to prevent infinite loops
-#         if iteration > len(node_names) * 3:  # Max 3 attempts per layer
-#             print("Reached maximum iteration limit. Exiting optimization loop.")
-#             optimized = False
-        
-#         # Check exit condition: no more optimizable layers
-#         if len(skip_layers) >= len(node_names):
-#             print("All layers processed. Exiting optimization loop.")
-#             optimized = False
-    
-#     # Final analysis
-#     final_cycle = cycle_analysis(mod_model, plot=True)
-#     final_res = resource_analysis(mod_model, fpgapart=fpgapart, plot=True)
-#     final_bottleneck, max_cycle = find_bottle_neck(final_cycle)
-    
-#     print(f"{spliter}\nFINAL RESULTS")
-#     print(f"Bottleneck layer: {final_bottleneck} with {max_cycle} cycles")
-#     print(f"Total LUTs used: {sum(final_res.values())}/{available_luts}")
-    
-#     # Export configurations
-#     folding_config = []
-#     sparsity_config = []
-    
-#     for i in range(len(unfold_decision)):
-#         layer_name = f'MVAU_hls_{i}'
-#         folding_level = unfold_decision[i]
-#         sparsity_level = sparsity_decision[i] if unfold_decision[i] > 0 else 0
-        
-#         folding_config.append({
-#             "layer": layer_name,
-#             "folding_level": folding_level,
-#             "double_unfold": i in double_unfold
-#         })
-        
-#         sparsity_config.append({
-#             "layer": layer_name,
-#             "sparsity_used": sparsity_level,
-#             "sparsity_ratio": sparsity_dict[layer_name]
-#         })
-    
-#     print(f"{spliter}\nFOLDING CONFIGURATION:")
-#     for config in folding_config:
-#         print(f"{config['layer']}: Level {config['folding_level']} {'(Double)' if config['double_unfold'] else ''}")
-    
-#     print(f"{spliter}\nSPARSITY CONFIGURATION:")
-#     for config in sparsity_config:
-#         print(f"{config['layer']}: {'Enabled' if config['sparsity_used'] else 'Disabled'} "
-#               f"(Sparsity: {config['sparsity_ratio']}%)")
-    
-#     return {
-#         "final_model": mod_model,
-#         "folding_config": folding_config,
-#         "sparsity_config": sparsity_config,
-#         "bottleneck": final_bottleneck,
-#         "max_cycle": max_cycle,
-#         "total_resources": sum(final_res.values()),
-#         "available_resources": available_luts,
-#         "resource_utilization": sum(final_res.values()) / available_luts
-#     }
-def solve_bottle_neck(model_path, sparsity_info, fpgapart="xcvu9p-flgb2104-2-i"):
+def solve_bottle_neck(estimation_path, sparsity_info, fpgapart="xcvu9p-flgb2104-2-i"):
     # Load and prepare the model
+    model_path = f"{estimation_path}/intermediate_models/step_generate_estimate_reports.onnx"
+    auto_folding_config = f"{estimation_path}/auto_folding_config.json"
+    new_folding_config = f"{estimation_path}/new_folding_config.json"
+    onnx_save_path = f"{estimation_path}/folding_config.onnx"
     model = get_onnx_model(model_path)
     onnx_model = onnx.load(model_path)
     channel_info = get_layer_channels(onnx_model)
@@ -866,7 +642,13 @@ def solve_bottle_neck(model_path, sparsity_info, fpgapart="xcvu9p-flgb2104-2-i")
     # final_bottleneck = final_bottleneck if final_bottleneck else "None"
     # onnx.save_model(mod_model, "final_model.onnx")
     # print(f"Final model saved as 'final_model.onnx'")   
-    mod_model.save("final_model2.onnx")
+    mod_model.save(onnx_save_path)
+
+
+
+
+    onnx_info = extract_folding_info_from_onnx(onnx_save_path)
+    update_folding_config(auto_folding_config, onnx_info, new_folding_config)
 
     return {
         "final_model": mod_model,
